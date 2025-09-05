@@ -955,6 +955,7 @@ export function getAllIntents(): Intent[] {
   return Object.values(INTENTS);
 }
 
+// DEPRECATED: This function is no longer used - intent classification is now fully LLM-driven
 export function findIntentByKeywords(question: string): Intent | undefined {
   const lower = question.toLowerCase();
   

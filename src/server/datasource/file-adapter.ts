@@ -99,11 +99,11 @@ export async function getSBLTimelineFromFile(parameters: Record<string, any> = {
 	let peakInterval = "";
 	
 	for (const r of rows as any[]) {
-		// Try different column name variations
-		const interval = String(r.Time || r.time || r.Interval || r.interval || r["Time Interval"] || "").trim();
-		const productivity = Number(r.Productivity || r.productivity || r["SBL Productivity"] || r["Productivity Rate"] || 0) || 0;
-		const lines = Number(r.Lines || r.lines || r["Lines Processed"] || r["Total Lines"] || 0) || 0;
-		const stations = Number(r.Stations || r.stations || r["Active Stations"] || r["Station Count"] || 8) || 8;
+		// Use actual column names from Excel file
+		const interval = String(r.interval_no || "").trim();
+		const productivity = Number(r.productivity || 0) || 0;
+		const lines = Number(r.total_line_count || 0) || 0;
+		const stations = Number(r.wave_number || 8) || 8; // Using wave_number as station count
 		
 		if (!interval) continue;
 		
@@ -127,6 +127,118 @@ export async function getSBLTimelineFromFile(parameters: Record<string, any> = {
 			peakInterval,
 			averageProductivity: Math.round(averageProductivity * 100) / 100,
 			totalLines
+		}
+	};
+}
+
+export async function getPTLTimelineFromFile(parameters: Record<string, any> = {}): Promise<SBLTimeline> {
+	const dir = getDataDir();
+	const fallbackDir = path.join(process.cwd(), "..");
+	const filePath = findLatestMatchingFile(dir, "ptl_productivity_")
+		|| findLatestMatchingFile(fallbackDir, "ptl_productivity_");
+	
+	if (!filePath) {
+		return {
+			timeline: [],
+			summary: {
+				peakProductivity: 0,
+				peakInterval: "",
+				averageProductivity: 0,
+				totalLines: 0
+			}
+		};
+	}
+	
+	const rows = readFirstSheetAsJson(filePath);
+	const timeline: SBLTimeline["timeline"] = [];
+	let totalLines = 0;
+	let peakProductivity = 0;
+	let peakInterval = "";
+	
+	for (const r of rows as any[]) {
+		// Use actual column names from PTL Excel file
+		const interval = String(r.interval_no || "").trim();
+		const productivity = Number(r.productivity || 0) || 0;
+		const lines = Number(r.first_scan_time || 0) || 0; // Using first_scan_time as line count
+		const stations = 8; // Default station count for PTL
+		
+		if (!interval) continue;
+		
+		timeline.push({ interval, productivity, lines, stations });
+		totalLines += lines;
+		
+		if (productivity > peakProductivity) {
+			peakProductivity = productivity;
+			peakInterval = interval;
+		}
+	}
+	
+	const averageProductivity = timeline.length > 0 
+		? timeline.reduce((sum, t) => sum + t.productivity, 0) / timeline.length 
+		: 0;
+	
+	return {
+		timeline,
+		summary: {
+			peakProductivity,
+			peakInterval,
+			averageProductivity: Math.round(averageProductivity * 100) / 100,
+			totalLines
+		}
+	};
+}
+
+export async function getStationCompletionFromFile(parameters: Record<string, any> = {}): Promise<any> {
+	const dir = getDataDir();
+	const fallbackDir = path.join(process.cwd(), "..");
+	const filePath = findLatestMatchingFile(dir, "line_completion_2_")
+		|| findLatestMatchingFile(fallbackDir, "line_completion_2_");
+	
+	if (!filePath) {
+		return {
+			stations: [],
+			summary: {
+				totalStations: 0,
+				averageCompletion: 0,
+				completedStations: 0
+			}
+		};
+	}
+	
+	const rows = readFirstSheetAsJson(filePath);
+	const stations: any[] = [];
+	let totalCompletion = 0;
+	let completedStations = 0;
+	
+	for (const r of rows as any[]) {
+		// Use actual column names from line completion Excel file
+		const code = String(r.code || "").trim();
+		const totalDemandLines = Number(r.total_demand_lines || 0) || 0;
+		const totalPackedLines = Number(r.total_demand_packed_lines || 0) || 0;
+		const completionPercentage = parseFloat(String(r.completion_percentage || "0").replace('%', '')) || 0;
+		
+		if (!code) continue;
+		
+		stations.push({
+			code,
+			totalDemandLines,
+			totalPackedLines,
+			completionPercentage,
+			pendingLines: totalDemandLines - totalPackedLines
+		});
+		
+		totalCompletion += completionPercentage;
+		if (completionPercentage >= 100) completedStations++;
+	}
+	
+	const averageCompletion = stations.length > 0 ? totalCompletion / stations.length : 0;
+	
+	return {
+		stations,
+		summary: {
+			totalStations: stations.length,
+			averageCompletion: Math.round(averageCompletion * 100) / 100,
+			completedStations
 		}
 	};
 } 

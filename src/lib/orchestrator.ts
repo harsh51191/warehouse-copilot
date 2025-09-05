@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { INTENTS, getIntentById, findIntentByKeywords, Intent, IntentParam } from "./intents";
+import { INTENTS, getIntentById, Intent, IntentParam } from "./intents";
 
 export interface ToolResult { 
   type: string; 
@@ -25,24 +25,13 @@ export async function analyseQuery(question: string): Promise<AnalysisResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   
   if (!apiKey) {
-    // Fallback to keyword-based routing
-    const intent = findIntentByKeywords(question);
-    if (!intent) {
-      return {
-        reasoning: 'No GEMINI_API_KEY set; keyword fallback failed',
-        intent: 'unknown',
-        parameters: {},
-        answer: 'I couldn\'t understand your question. Try asking about loading status, SBL trends, or PTL productivity.'
-      };
-    }
-    
-    const parameters = extractParametersFromQuestion(question, intent);
+    // No API key - provide helpful guidance
     return {
-      reasoning: 'No GEMINI_API_KEY set; keyword-based routing',
-      intent: intent.id,
-      parameters,
-      answer: `I'll check ${intent.description.toLowerCase()} for you.`,
-      uiPatch: intent.uiHints
+      reasoning: 'No GEMINI_API_KEY set; LLM classification unavailable',
+      intent: 'unknown',
+      parameters: {},
+      answer: 'I need a GEMINI_API_KEY to understand your question. Please set the GEMINI_API_KEY environment variable to enable intelligent question analysis. Without it, I can only provide basic responses.',
+      uiPatch: { highlight: [] }
     };
   }
 
@@ -72,16 +61,25 @@ Available data sources:
 ${JSON.stringify(availableIntents, null, 2)}
 
 Instructions:
-1. Determine what data needs to be fetched (loading status, SBL productivity, PTL data, etc.)
-2. Extract any parameters from the question (wave numbers, thresholds, time periods, etc.)
-3. Generate a natural, conversational answer approach
-4. Suggest which UI components should be highlighted
+1. Understand the user's intent regardless of how they phrase the question
+2. Match the question to the most appropriate data source from the available intents
+3. Extract any parameters from the question (wave numbers, thresholds, time periods, etc.)
+4. Consider synonyms and variations:
+   - "completion" = "completion percentage", "progress", "status"
+   - "productivity" = "performance", "output", "efficiency", "rate"
+   - "loading" = "loading status", "trip progress", "dockdoor"
+   - "SBL" = "sorting", "picking", "warehouse operations"
+   - "PTL" = "put-to-light", "packing", "fulfillment"
+   - "station" = "workstation", "zone", "area"
+   - "average" = "mean", "overall", "across all"
+5. If the question asks for "average" or "overall" metrics, choose the intent that provides summary data
+6. If the question asks for specific details, choose the intent that provides detailed breakdowns
 
 Respond with JSON:
 {
   "intent": "data_source_to_fetch",
   "parameters": {"param_name": "value"},
-  "reasoning": "why you chose this approach",
+  "reasoning": "why you chose this approach and how you interpreted the question",
   "answer_approach": "how to structure the answer naturally",
   "ui_highlight": ["component1", "component2"]
 }`;
@@ -121,52 +119,15 @@ Respond with JSON:
   } catch (error) {
     console.error('Gemini classification failed:', error);
     
-    // Fallback to keyword routing
-    const intent = findIntentByKeywords(question);
-    if (!intent) {
-      return {
-        reasoning: 'Gemini failed; keyword fallback failed',
-        intent: 'unknown',
-        parameters: {},
-        answer: 'I couldn\'t understand your question. Try asking about loading status, SBL trends, or PTL productivity.'
-      };
-    }
-    
-    const parameters = extractParametersFromQuestion(question, intent);
+    // Return error response instead of hardcoded fallback
     return {
-      reasoning: 'Gemini failed; keyword-based routing',
-      intent: intent.id,
-      parameters,
-      answer: `I'll check ${intent.description.toLowerCase()} for you.`,
-      uiPatch: intent.uiHints
+      reasoning: `Gemini classification failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      intent: 'unknown',
+      parameters: {},
+      answer: 'I encountered an error while trying to understand your question. Please try rephrasing it or check if the GEMINI_API_KEY is valid. You can ask about loading status, SBL productivity, PTL trends, station completion, or other warehouse operations.',
+      uiPatch: { highlight: [] }
     };
   }
 }
 
-function extractParametersFromQuestion(question: string, intent: Intent): Record<string, any> {
-  const parameters: Record<string, any> = {};
-  const lower = question.toLowerCase();
-  
-  for (const param of intent.parameters) {
-    if (param.default !== undefined) {
-      parameters[param.name] = param.default;
-    }
-    
-    // Simple keyword extraction
-    if (param.name === 'wave_id') {
-      const waveMatch = lower.match(/wave\s+(\d+)/);
-      if (waveMatch) {
-        parameters[param.name] = waveMatch[1];
-      }
-    }
-    
-    if (param.name === 'session_code') {
-      const sessionMatch = lower.match(/session\s+([a-zA-Z0-9_]+)/);
-      if (sessionMatch) {
-        parameters[param.name] = sessionMatch[1];
-      }
-    }
-  }
-  
-  return parameters;
-} 
+// Removed hardcoded parameter extraction - now handled by LLM 

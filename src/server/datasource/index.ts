@@ -1,4 +1,4 @@
-import { getLoadingStatusFromFile, getSBLTimelineFromFile, LoadingStatus, SBLTimeline } from "@/server/datasource/file-adapter";
+ import { getLoadingStatusFromFile, getSBLTimelineFromFile, getPTLTimelineFromFile, getStationCompletionFromFile, LoadingStatus, SBLTimeline } from "@/server/datasource/file-adapter";
 
 export type RunnerFunction = (parameters: Record<string, any>) => Promise<any>;
 
@@ -58,11 +58,16 @@ export function getRunner(intent: string): RunnerFunction | null {
 				
 			case 'ptl_prod_timeline':
 				return async (parameters: Record<string, any>) => {
-					// TODO: implement PTL timeline runner
+					const data = await getPTLTimelineFromFile(parameters);
+					
+					let answer = `PTL productivity timeline: Peak at interval ${data.summary.peakInterval} with ${data.summary.peakProductivity} lines/hour. `;
+					answer += `Average productivity: ${data.summary.averageProductivity} lines/hour. `;
+					answer += `Total lines processed: ${data.summary.totalLines}.`;
+					
 					return {
-						data: { timeline: [], summary: { peakProductivity: 0, peakInterval: "", averageProductivity: 0, totalLines: 0 } },
-						answer: "PTL productivity timeline not yet implemented.",
-						uiPatch: { highlight: ['PTLTrend'] }
+						data,
+						answer,
+						uiPatch: { highlight: ['PTLTrend', 'ProductivityChart'] }
 					};
 				};
 				
@@ -343,21 +348,17 @@ export function getRunner(intent: string): RunnerFunction | null {
 
 			case 'station_completion_percentage':
 				return async (parameters: Record<string, any>) => {
-					// Mock completion data - in real implementation, read from line_completion_2 Excel
-					const stations = [
-						{ station: 'SBL-01', completion: 95, pending: 12 },
-						{ station: 'SBL-02', completion: 88, pending: 25 },
-						{ station: 'PTL-01', completion: 92, pending: 18 },
-						{ station: 'PTL-02', completion: 85, pending: 32 }
-					];
+					const data = await getStationCompletionFromFile(parameters);
 					
 					let answer = `Station completion percentages: `;
-					stations.forEach(station => {
-						answer += `${station.station}: ${station.completion}% (${station.pending} pending). `;
+					data.stations.forEach((station: any) => {
+						answer += `${station.code}: ${station.completionPercentage}% (${station.pendingLines} pending). `;
 					});
+					answer += `Average completion: ${data.summary.averageCompletion}%. `;
+					answer += `${data.summary.completedStations}/${data.summary.totalStations} stations completed.`;
 					
 					return {
-						data: { stations },
+						data,
 						answer,
 						uiPatch: { highlight: ['SBLTrend', 'PTLTrend'] }
 					};
