@@ -77,6 +77,10 @@ const colorTone = (kind:"good"|"warn"|"bad") => ({
   bad:  "bg-rose-50 text-rose-700 border-rose-200"
 }[kind]);
 
+const getHighlightClass = (componentId: string, highlights: string[]) => {
+  return highlights.includes(componentId) ? 'ring-2 ring-blue-400 ring-opacity-75 shadow-lg' : '';
+};
+
 function Badge({tone, children}:{tone:"good"|"warn"|"bad"; children:React.ReactNode}){
   return <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-sm ${colorTone(tone)}`}>{tone==='good'?<CheckCircle2 size={16}/>:<AlertTriangle size={16}/>} {children}</span>
 }
@@ -101,9 +105,10 @@ function Progress({value}:{value:number}){
   )
 }
 
-function Trend({data, label, highlight}:{data:{t:string, lines:number}[]; label:string; highlight?:boolean}){
+function Trend({data, label, highlight, componentId, uiHighlights}:{data:{t:string, lines:number}[]; label:string; highlight?:boolean; componentId?: string; uiHighlights?: string[]}){
+  const highlightClass = componentId ? getHighlightClass(componentId, uiHighlights || []) : '';
   return (
-    <div className={`rounded-2xl border p-4 bg-white shadow-sm ${highlight? 'ring-2 ring-amber-300': ''}`}>
+    <div className={`rounded-2xl border p-4 bg-white shadow-sm ${highlight? 'ring-2 ring-amber-300': ''} ${highlightClass}`}>
       <div className="flex items-center justify-between mb-2"><div className="font-medium">{label}</div></div>
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
@@ -121,7 +126,7 @@ function Trend({data, label, highlight}:{data:{t:string, lines:number}[]; label:
   )
 }
 
-function Funnel({trips, highlight}:{trips:any[]; highlight?:boolean}){
+function Funnel({trips, highlight, componentId, uiHighlights}:{trips:any[]; highlight?:boolean; componentId?: string; uiHighlights?: string[]}){
   const rows = trips.map(tr=>({
     trip: tr.trip,
     sortedPct: tr.total? Math.round((tr.sorted / tr.total)*100):0,
@@ -129,8 +134,9 @@ function Funnel({trips, highlight}:{trips:any[]; highlight?:boolean}){
     loadedPct: tr.total? Math.round((tr.loaded / tr.total)*100):0,
     qc: tr.qc
   }))
+  const highlightClass = componentId ? getHighlightClass(componentId, uiHighlights || []) : '';
   return (
-    <div className={`rounded-2xl border p-4 bg-white shadow-sm ${highlight? 'ring-2 ring-amber-300': ''}`}>
+    <div className={`rounded-2xl border p-4 bg-white shadow-sm ${highlight? 'ring-2 ring-amber-300': ''} ${highlightClass}`}>
       <div className="font-medium mb-3 flex items-center gap-2"><Layers size={16}/> Trip Progress (Funnel)</div>
       <div className="space-y-3">
         {rows.map(r=> (
@@ -181,24 +187,54 @@ function Prescription({title, deltas, onApply, variant}:{title:string; deltas:{l
   )
 }
 
-function CopilotPanel({onQuery}:{onQuery:(q:string)=>void}){
+function CopilotPanel({onQuery}:{onQuery:(q:string, uiPatch?:any)=>void}){
   const [messages, setMessages] = useState<any[]>([
     { role: "ai", text: "Hi! Ask about Wave 3, or tap a suggestion below."},
   ]);
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const suggestions = [
-    "Why is Wave 3 at risk?",
-    "Show SBL vs PTL productivity",
-    "Add 1 picker to Loop 2",
+    "How's loading going?",
+    "SBL trend for wave 3",
+    "Show me trip progress",
     "Which trips block OTIF?",
   ];
-  const send = (txt?:string) => {
+  
+  const send = async (txt?:string) => {
     const q = (txt ?? input).trim();
-    if(!q) return;
-    const reply = routeQueryToReply(q);
-    setMessages(prev => [...prev, {role:'user', text:q}, {role:'ai', text:reply}]);
+    if(!q || isLoading) return;
+    
+    setIsLoading(true);
+    setMessages(prev => [...prev, {role:'user', text:q}]);
     setInput("");
-    onQuery(q);
+    
+    try {
+      const response = await fetch('/api/ai/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q })
+      });
+      
+      const result = await response.json();
+      
+      if (result.ok) {
+        const aiMessage = {
+          role: 'ai',
+          text: result.data.answer,
+          uiPatch: result.data.uiPatch,
+          reasoning: result.data.reasoning
+        };
+        setMessages(prev => [...prev, aiMessage]);
+        onQuery(q, result.data.uiPatch);
+      } else {
+        setMessages(prev => [...prev, {role:'ai', text: `Error: ${result.error}`}]);
+      }
+    } catch (error) {
+      console.error('AI request failed:', error);
+      setMessages(prev => [...prev, {role:'ai', text: 'Sorry, I encountered an error. Please try again.'}]);
+    } finally {
+      setIsLoading(false);
+    }
   };
   return (
     <div className="h-full flex flex-col">
@@ -212,8 +248,10 @@ function CopilotPanel({onQuery}:{onQuery:(q:string)=>void}){
         </div>
       </div>
       <div className="p-3 border-t flex items-center gap-2">
-        <input value={input} onChange={e=>setInput(e.target.value)} placeholder="Type a question…" className="flex-1 border rounded-xl px-3 py-2"/>
-        <button onClick={()=>send()} className="px-3 py-2 rounded-xl bg-slate-900 text-white">Send</button>
+        <input value={input} onChange={e=>setInput(e.target.value)} placeholder="Type a question…" className="flex-1 border rounded-xl px-3 py-2" disabled={isLoading}/>
+        <button onClick={()=>send()} className="px-3 py-2 rounded-xl bg-slate-900 text-white" disabled={isLoading}>
+          {isLoading ? '...' : 'Send'}
+        </button>
       </div>
     </div>
   );
@@ -240,6 +278,7 @@ function routeQueryToReply(q:string){
 export default function VapiWaveCopilotDual() {
   const [mode, setMode] = useState<'HYBRID'|'THREEPANEL'>('HYBRID');
   const [state, setState] = useState(makeInitialState());
+  const [uiHighlights, setUiHighlights] = useState<string[]>([]);
 
   const minutesLate = useMemo(()=> Math.round((state.projectedFinish.getTime() - cutoff.getTime())/60000), [state.projectedFinish]);
   const riskTone: 'good'|'warn'|'bad' = minutesLate <= -5 ? 'good' : minutesLate <= 0 ? 'warn' : 'bad';
@@ -258,7 +297,15 @@ export default function VapiWaveCopilotDual() {
     setState(s => ({...s, projectedFinish: newFinish, valueCoveragePct: 1.0, lineCoveragePct: 0.98, highlight:'FUNNEL'}));
   };
 
-  const handleQuery = (q:string) => {
+  const handleQuery = (q:string, uiPatch?:any) => {
+    // Handle UI patches from AI responses
+    if (uiPatch?.highlight) {
+      setUiHighlights(uiPatch.highlight);
+      // Clear highlights after 3 seconds
+      setTimeout(() => setUiHighlights([]), 3000);
+    }
+    
+    // Legacy keyword-based highlighting (fallback)
     const t = q.toLowerCase();
     if(t.includes('sbl') && t.includes('ptl')){
       setState(s => ({...s, highlight:'SBL'}));
@@ -297,7 +344,7 @@ export default function VapiWaveCopilotDual() {
   );
 
   const WaveHeader = (
-    <div className="rounded-2xl border p-4 bg-white shadow-sm">
+    <div className={`rounded-2xl border p-4 bg-white shadow-sm ${getHighlightClass('WaveSummary', uiHighlights)}`}>
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <div className="text-sm text-slate-500">Projected Finish</div>
@@ -315,8 +362,8 @@ export default function VapiWaveCopilotDual() {
     </div>
   );
 
-  const sblTrend = <Trend data={state.sblBuckets} label="SBL · lines/10 min (per station)" highlight={state.highlight==='SBL'} />;
-  const ptlTrend = <Trend data={state.ptlBuckets} label="PTL · lines/10 min (per station)" highlight={state.highlight==='PTL'} />;
+  const sblTrend = <Trend data={state.sblBuckets} label="SBL · lines/10 min (per station)" highlight={state.highlight==='SBL'} componentId="SBLTrend" uiHighlights={uiHighlights} />;
+  const ptlTrend = <Trend data={state.ptlBuckets} label="PTL · lines/10 min (per station)" highlight={state.highlight==='PTL'} componentId="PTLTrend" uiHighlights={uiHighlights} />;
 
   const Hybrid = (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -351,7 +398,7 @@ export default function VapiWaveCopilotDual() {
           </div>
           <div className="text-xs text-slate-500 mt-2">Drop at 14:20 suggests staging starvation.</div>
         </div>
-        <Funnel trips={state.trips} highlight={state.highlight==='FUNNEL'} />
+        <Funnel trips={state.trips} highlight={state.highlight==='FUNNEL'} componentId="TripsGrid" uiHighlights={uiHighlights} />
       </section>
       <aside className="rounded-2xl border bg-white shadow-sm overflow-hidden">
         <CopilotPanel onQuery={handleQuery} />

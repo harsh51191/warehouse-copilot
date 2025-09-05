@@ -14,7 +14,27 @@ export type LoadingStatus = {
 		loaded: number;
 		total: number;
 		qc: number;
+		vehicleNo?: string;
+		casesLoaded?: number;
+		casesStaged?: number;
+		xdock?: boolean;
+		dockdoorQueue?: string;
 	}>;
+};
+
+export type SBLTimeline = {
+	timeline: Array<{
+		interval: string;
+		productivity: number;
+		lines: number;
+		stations: number;
+	}>;
+	summary: {
+		peakProductivity: number;
+		peakInterval: string;
+		averageProductivity: number;
+		totalLines: number;
+	};
 };
 
 export async function getLoadingStatusFromFile(): Promise<LoadingStatus> {
@@ -51,5 +71,62 @@ export async function getLoadingStatusFromFile(): Promise<LoadingStatus> {
 			totalPending: Math.max(0, totalAssigned - totalLoaded)
 		},
 		byTrip
+	};
+}
+
+export async function getSBLTimelineFromFile(parameters: Record<string, any> = {}): Promise<SBLTimeline> {
+	const dir = getDataDir();
+	const fallbackDir = path.join(process.cwd(), "..");
+	const filePath = findLatestMatchingFile(dir, "sbl_productivity_withtime_")
+		|| findLatestMatchingFile(fallbackDir, "sbl_productivity_withtime_");
+	
+	if (!filePath) {
+		return {
+			timeline: [],
+			summary: {
+				peakProductivity: 0,
+				peakInterval: "",
+				averageProductivity: 0,
+				totalLines: 0
+			}
+		};
+	}
+	
+	const rows = readFirstSheetAsJson(filePath);
+	const timeline: SBLTimeline["timeline"] = [];
+	let totalLines = 0;
+	let peakProductivity = 0;
+	let peakInterval = "";
+	
+	for (const r of rows as any[]) {
+		// Try different column name variations
+		const interval = String(r.Time || r.time || r.Interval || r.interval || r["Time Interval"] || "").trim();
+		const productivity = Number(r.Productivity || r.productivity || r["SBL Productivity"] || r["Productivity Rate"] || 0) || 0;
+		const lines = Number(r.Lines || r.lines || r["Lines Processed"] || r["Total Lines"] || 0) || 0;
+		const stations = Number(r.Stations || r.stations || r["Active Stations"] || r["Station Count"] || 8) || 8;
+		
+		if (!interval) continue;
+		
+		timeline.push({ interval, productivity, lines, stations });
+		totalLines += lines;
+		
+		if (productivity > peakProductivity) {
+			peakProductivity = productivity;
+			peakInterval = interval;
+		}
+	}
+	
+	const averageProductivity = timeline.length > 0 
+		? timeline.reduce((sum, t) => sum + t.productivity, 0) / timeline.length 
+		: 0;
+	
+	return {
+		timeline,
+		summary: {
+			peakProductivity,
+			peakInterval,
+			averageProductivity: Math.round(averageProductivity * 100) / 100,
+			totalLines
+		}
 	};
 } 
