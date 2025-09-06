@@ -22,13 +22,14 @@ export function getRunner(intent: string): RunnerFunction | null {
 						trip.total > 0 && (trip.loaded / trip.total) < 0.6
 					);
 					
-					let answer = `Loading status: ${data.summary.totalLoaded}/${data.summary.totalAssigned} crates loaded (${Math.round((data.summary.totalLoaded / data.summary.totalAssigned) * 100)}% complete). `;
+					const progress = Math.round((data.summary.totalLoaded / data.summary.totalAssigned) * 100);
+					let answer = `${progress}% loading complete (${data.summary.totalLoaded}/${data.summary.totalAssigned} crates).`;
 					
 					if (lowProgressTrips.length > 0) {
-						answer += `Trips with <60% progress: ${lowProgressTrips.map(t => t.trip).join(', ')}. `;
+						answer += ` ${lowProgressTrips.length} trips below 60% progress.`;
 					}
 					
-					answer += `QC queue has ${data.byTrip.reduce((sum, t) => sum + t.qc, 0)} pending crates.`;
+					answer += ` ${data.byTrip.reduce((sum, t) => sum + t.qc, 0)} pending in QC.`;
 					
 					return {
 						data,
@@ -43,9 +44,7 @@ export function getRunner(intent: string): RunnerFunction | null {
 				return async (parameters: Record<string, any>) => {
 					const data = await getSBLTimelineFromFile(parameters);
 					
-					let answer = `SBL productivity timeline: Peak at ${data.summary.peakInterval} with ${data.summary.peakProductivity} lines/hour. `;
-					answer += `Average productivity: ${data.summary.averageProductivity} lines/hour. `;
-					answer += `Total lines processed: ${data.summary.totalLines}.`;
+					let answer = `SBL productivity: ${data.summary.averageProductivity} lines/hour average, peak ${data.summary.peakProductivity} at interval ${data.summary.peakInterval}.`;
 					
 					return {
 						data,
@@ -350,12 +349,11 @@ export function getRunner(intent: string): RunnerFunction | null {
 				return async (parameters: Record<string, any>) => {
 					const data = await getStationCompletionFromFile(parameters);
 					
-					let answer = `Station completion percentages: `;
-					data.stations.forEach((station: any) => {
-						answer += `${station.code}: ${station.completionPercentage}% (${station.pendingLines} pending). `;
-					});
-					answer += `Average completion: ${data.summary.averageCompletion}%. `;
-					answer += `${data.summary.completedStations}/${data.summary.totalStations} stations completed.`;
+					let answer = `Average completion: ${data.summary.averageCompletion}% across ${data.summary.totalStations} stations. `;
+					const lowStations = data.stations.filter((s: any) => s.completionPercentage < 90);
+					if (lowStations.length > 0) {
+						answer += `${lowStations.length} stations below 90% completion.`;
+					}
 					
 					return {
 						data,

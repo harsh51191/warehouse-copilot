@@ -10,6 +10,13 @@ export function readFirstSheetAsJson(filePath: string): any[] {
 	return XLSX.utils.sheet_to_json(ws, { defval: null });
 }
 
+export function readFirstSheetAsJsonFromBuffer(buffer: Buffer): any[] {
+	const wb = XLSX.read(buffer, { type: "buffer" });
+	const sheetName = wb.SheetNames[0];
+	const ws = wb.Sheets[sheetName];
+	return XLSX.utils.sheet_to_json(ws, { defval: null });
+}
+
 export function findLatestMatchingFile(dir: string, prefix: string): string | null {
 	if (!fs.existsSync(dir)) return null;
 	const files = fs.readdirSync(dir).filter(f => f.startsWith(prefix) && f.endsWith('.xlsx'));

@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock, Activity, Layers, Truck, Bot, Info, Sparkles, SlidersHorizontal } from "lucide-react";
+import React, { useMemo, useState, useEffect } from "react";
+import { AlertTriangle, CheckCircle2, Clock, Activity, Layers, Truck, Bot, Info, Sparkles, SlidersHorizontal, Loader2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend } from "recharts";
+import ExcelUpload from "./ExcelUpload";
 
 /**
  * Vapi Wave Copilot – Two UX Variants in one file:
@@ -105,22 +106,36 @@ function Progress({value}:{value:number}){
   )
 }
 
-function Trend({data, label, highlight, componentId, uiHighlights}:{data:{t:string, lines:number}[]; label:string; highlight?:boolean; componentId?: string; uiHighlights?: string[]}){
+function Trend({data, label, highlight, componentId, uiHighlights, isLoading}:{data:{t:string, lines:number}[]; label:string; highlight?:boolean; componentId?: string; uiHighlights?: string[]; isLoading?: boolean}){
   const highlightClass = componentId ? getHighlightClass(componentId, uiHighlights || []) : '';
   return (
     <div className={`rounded-2xl border p-4 bg-white shadow-sm ${highlight? 'ring-2 ring-amber-300': ''} ${highlightClass}`}>
-      <div className="flex items-center justify-between mb-2"><div className="font-medium">{label}</div></div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="font-medium">{label}</div>
+        {isLoading && (
+          <div className="flex items-center gap-1 text-xs text-slate-500">
+            <Loader2 size={14} className="animate-spin" />
+            Loading...
+          </div>
+        )}
+      </div>
       <div className="h-40">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{left:8, right:8, top:10, bottom:0}}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="t" tick={{fontSize:12}}/>
-            <YAxis tick={{fontSize:12}}/>
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="lines" strokeWidth={2} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+        {isLoading ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-slate-400 text-sm">Loading data from Excel...</div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data} margin={{left:8, right:8, top:10, bottom:0}}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="t" tick={{fontSize:12}}/>
+              <YAxis tick={{fontSize:12}}/>
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="lines" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   )
@@ -238,19 +253,97 @@ function CopilotPanel({onQuery}:{onQuery:(q:string, uiPatch?:any)=>void}){
   };
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 border-b flex items-center justify-between"><div className="flex items-center gap-2 font-semibold"><Bot size={18}/> Copilot</div></div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.map((m,idx)=> (
-          <div key={idx} className={`max-w-[85%] rounded-2xl px-3 py-2 ${m.role==='ai'? 'bg-slate-100':'bg-slate-900 text-white ml-auto'}`}>{m.text}</div>
-        ))}
-        <div className="flex gap-2 flex-wrap pt-2">
-          {suggestions.map(s => <button key={s} onClick={()=>send(s)} className="text-xs border rounded-full px-3 py-1 hover:bg-slate-50">{s}</button>)}
+      <div className="p-4 border-b flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-2 font-semibold">
+          <Bot size={18}/> Copilot
+          {isLoading && (
+            <div className="flex items-center gap-1 text-xs text-slate-500">
+              <Loader2 size={12} className="animate-spin"/>
+              Processing...
+            </div>
+          )}
         </div>
       </div>
-      <div className="p-3 border-t flex items-center gap-2">
-        <input value={input} onChange={e=>setInput(e.target.value)} placeholder="Type a question…" className="flex-1 border rounded-xl px-3 py-2" disabled={isLoading}/>
-        <button onClick={()=>send()} className="px-3 py-2 rounded-xl bg-slate-900 text-white" disabled={isLoading}>
-          {isLoading ? '...' : 'Send'}
+      
+      {/* Chat messages area - scrollable */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+        {messages.map((m,idx)=> (
+          <div key={idx} className={`max-w-[85%] rounded-2xl px-3 py-2 ${m.role==='ai'? 'bg-slate-100':'bg-slate-900 text-white ml-auto'}`}>
+            <div className="text-sm leading-relaxed">{m.text}</div>
+          </div>
+        ))}
+        
+        {/* Loading message */}
+        {isLoading && (
+          <div className="max-w-[85%] rounded-2xl px-3 py-2 bg-slate-100 flex items-center gap-2">
+            <Loader2 size={14} className="animate-spin text-slate-500"/>
+            <span className="text-slate-600 text-sm">Analyzing your question...</span>
+          </div>
+        )}
+        
+        {/* Show suggestions only when not loading */}
+        {!isLoading && (
+          <div className="flex gap-2 flex-wrap pt-2">
+            {messages.length === 1 ? (
+              // Initial welcome suggestions
+              suggestions.map(s => (
+                <button 
+                  key={s} 
+                  onClick={()=>send(s)} 
+                  className="text-xs border rounded-full px-3 py-1 hover:bg-slate-50 transition-colors"
+                  disabled={isLoading}
+                >
+                  {s}
+                </button>
+              ))
+            ) : (
+              // Follow-up suggestions after interaction
+              <>
+                <span className="text-xs text-slate-500 w-full mb-1">Try asking:</span>
+                {suggestions.map(s => (
+                  <button 
+                    key={s} 
+                    onClick={()=>send(s)} 
+                    className="text-xs border rounded-full px-3 py-1 hover:bg-slate-50 transition-colors"
+                    disabled={isLoading}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* Fixed input area at bottom */}
+      <div className="p-3 border-t flex items-center gap-2 flex-shrink-0 bg-white">
+        <input 
+          value={input} 
+          onChange={e=>setInput(e.target.value)} 
+          placeholder={isLoading ? "Processing your question..." : "Type a question…"} 
+          className="flex-1 border rounded-xl px-3 py-2 disabled:bg-slate-50 disabled:text-slate-400 text-sm" 
+          disabled={isLoading}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !isLoading && input.trim()) {
+              e.preventDefault();
+              send();
+            }
+          }}
+        />
+        <button 
+          onClick={()=>send()} 
+          className="px-3 py-2 rounded-xl bg-slate-900 text-white disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-2 text-sm" 
+          disabled={isLoading || !input.trim()}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 size={14} className="animate-spin"/>
+              Processing
+            </>
+          ) : (
+            'Send'
+          )}
         </button>
       </div>
     </div>
@@ -274,11 +367,70 @@ function routeQueryToReply(q:string){
   return "Let me compute that from the latest buckets…";
 }
 
+// ---------- Data Fetching ----------
+async function fetchSBLTimeline() {
+  try {
+    const response = await fetch('/api/metrics/sbl-timeline');
+    if (!response.ok) throw new Error('Failed to fetch SBL timeline');
+    const data = await response.json();
+    return data.data?.timeline || [];
+  } catch (error) {
+    console.error('Error fetching SBL timeline:', error);
+    return [];
+  }
+}
+
+async function fetchPTLTimeline() {
+  try {
+    const response = await fetch('/api/metrics/ptl-timeline');
+    if (!response.ok) throw new Error('Failed to fetch PTL timeline');
+    const data = await response.json();
+    return data.data?.timeline || [];
+  } catch (error) {
+    console.error('Error fetching PTL timeline:', error);
+    return [];
+  }
+}
+
+// Transform timeline data to chart format
+function transformTimelineToChart(timeline: any[]) {
+  return timeline.map(item => ({
+    t: item.interval,
+    lines: Math.round(item.productivity)
+  }));
+}
+
 // ---------- Main Component ----------
 export default function VapiWaveCopilotDual() {
   const [mode, setMode] = useState<'HYBRID'|'THREEPANEL'>('HYBRID');
   const [state, setState] = useState(makeInitialState());
   const [uiHighlights, setUiHighlights] = useState<string[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
+  // Fetch real data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      setIsDataLoading(true);
+      try {
+        const [sblTimeline, ptlTimeline] = await Promise.all([
+          fetchSBLTimeline(),
+          fetchPTLTimeline()
+        ]);
+        
+        setState(prev => ({
+          ...prev,
+          sblBuckets: transformTimelineToChart(sblTimeline),
+          ptlBuckets: transformTimelineToChart(ptlTimeline)
+        }));
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setIsDataLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
 
   const minutesLate = useMemo(()=> Math.round((state.projectedFinish.getTime() - cutoff.getTime())/60000), [state.projectedFinish]);
   const riskTone: 'good'|'warn'|'bad' = minutesLate <= -5 ? 'good' : minutesLate <= 0 ? 'warn' : 'bad';
@@ -351,7 +503,7 @@ export default function VapiWaveCopilotDual() {
           <div className="text-2xl font-semibold">{fmtTime(state.projectedFinish)} <span className="text-slate-400 text-base font-normal">(Cutoff {fmtTime(cutoff)})</span></div>
           <div className="mt-2">{basics}</div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full md:w-auto md:min-w-[520px] ml-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full md:w-auto md:min-w-[520px]">
           <Stat title="OTIF Risk" value={riskLabel} tone={riskTone} sub="Detect→Decide→Do < 60s"/>
           <Stat title="Line Coverage" value={pct(state.lineCoveragePct)} tone={coverageTone(state.lineCoveragePct)} sub="across SBL/PTL/Full"/>
           <Stat title="Value Coverage" value={pct(state.valueCoveragePct)} tone={coverageTone(state.valueCoveragePct)} sub="proxy = crates"/>
@@ -362,12 +514,12 @@ export default function VapiWaveCopilotDual() {
     </div>
   );
 
-  const sblTrend = <Trend data={state.sblBuckets} label="SBL · lines/10 min (per station)" highlight={state.highlight==='SBL'} componentId="SBLTrend" uiHighlights={uiHighlights} />;
-  const ptlTrend = <Trend data={state.ptlBuckets} label="PTL · lines/10 min (per station)" highlight={state.highlight==='PTL'} componentId="PTLTrend" uiHighlights={uiHighlights} />;
+  const sblTrend = <Trend data={isDataLoading ? [] : state.sblBuckets} label="SBL · lines/10 min (per station)" highlight={state.highlight==='SBL'} componentId="SBLTrend" uiHighlights={uiHighlights} isLoading={isDataLoading} />;
+  const ptlTrend = <Trend data={isDataLoading ? [] : state.ptlBuckets} label="PTL · lines/10 min (per station)" highlight={state.highlight==='PTL'} componentId="PTLTrend" uiHighlights={uiHighlights} isLoading={isDataLoading} />;
 
   const Hybrid = (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-      <section className="xl:col-span-2 space-y-4">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <section className="lg:col-span-2 space-y-4">
         {WaveHeader}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Prescription title="Option A · Prioritise OTIF (move 12 low-value lines)" deltas={deltasOTIF} onApply={applyOTIF} variant="otif"/>
@@ -400,9 +552,9 @@ export default function VapiWaveCopilotDual() {
         </div>
         <Funnel trips={state.trips} highlight={state.highlight==='FUNNEL'} componentId="TripsGrid" uiHighlights={uiHighlights} />
       </section>
-      <aside className="rounded-2xl border bg-white shadow-sm overflow-hidden">
-        <CopilotPanel onQuery={handleQuery} />
-      </aside>
+      <div className="lg:col-span-1">
+        {/* Spacer for fixed chat panel */}
+      </div>
     </div>
   );
 
@@ -471,9 +623,9 @@ export default function VapiWaveCopilotDual() {
         </div>
       </div>
 
-      <aside className="lg:col-span-1 rounded-2xl border bg-white shadow-sm overflow-hidden">
-        <CopilotPanel onQuery={handleQuery} />
-      </aside>
+      <div className="lg:col-span-1">
+        {/* Spacer for fixed chat panel */}
+      </div>
     </div>
   );
 
@@ -488,21 +640,34 @@ export default function VapiWaveCopilotDual() {
               <div className="text-xs text-slate-500">Outbound · Wave {state.waveId}</div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:block text-xs text-slate-500 mr-2">Switch layout</div>
-            <div className="flex items-center gap-2 border rounded-xl px-2 py-1 bg-white">
-              <button onClick={()=>setMode('HYBRID')} className={`text-xs px-2 py-1 rounded-lg ${mode==='HYBRID'? 'bg-slate-900 text-white':'hover:bg-slate-50'}`}>Hybrid</button>
-              <button onClick={()=>setMode('THREEPANEL')} className={`text-xs px-2 py-1 rounded-lg ${mode==='THREEPANEL'? 'bg-slate-900 text-white':'hover:bg-slate-50'}`}>Three‑Panel</button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="hidden sm:block text-xs text-slate-500 mr-2">Switch layout</div>
+              <div className="flex items-center gap-2 border rounded-xl px-2 py-1 bg-white">
+                <button onClick={()=>setMode('HYBRID')} className={`text-xs px-2 py-1 rounded-lg ${mode==='HYBRID'? 'bg-slate-900 text-white':'hover:bg-slate-50'}`}>Hybrid</button>
+                <button onClick={()=>setMode('THREEPANEL')} className={`text-xs px-2 py-1 rounded-lg ${mode==='THREEPANEL'? 'bg-slate-900 text-white':'hover:bg-slate-50'}`}>Three‑Panel</button>
+              </div>
             </div>
+            <ExcelUpload onUploadComplete={() => {
+              // Refresh data after upload
+              window.location.reload();
+            }} />
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-4 py-6 pb-8">
         {mode==='HYBRID'? Hybrid : ThreePanel}
       </main>
 
       <footer className="py-6 text-center text-xs text-slate-500">Prototype · Mock data · Writes disabled</footer>
+      
+      {/* Fixed Chat Panel */}
+      <div className="fixed top-20 right-4 w-80 h-[calc(100vh-6rem)] max-h-[500px] min-h-[400px] z-30 hidden lg:block">
+        <div className="h-full rounded-2xl border bg-white shadow-lg overflow-hidden">
+          <CopilotPanel onQuery={handleQuery} />
+        </div>
+      </div>
     </div>
   );
 } 

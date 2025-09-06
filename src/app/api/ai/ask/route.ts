@@ -17,23 +17,21 @@ async function generateDynamicAnswer(question: string, data: any, intent: string
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-    const prompt = `You are a warehouse management AI assistant. Based on the user's question and the actual data, provide a natural, conversational answer.
+    const prompt = `You are a warehouse management AI assistant. Provide a concise, direct answer.
 
 User Question: "${question}"
 Intent: ${intent}
 Data: ${JSON.stringify(data, null, 2)}
 
 Instructions:
-1. Answer the user's question directly and naturally - NO JSON or technical jargon
-2. Use the actual data values in your response but explain them in plain English
-3. Provide insights and context based on the data
-4. Suggest specific actions if there are issues or opportunities
-5. Be conversational, helpful, and easy to understand
-6. Format your response as a natural conversation, not a data dump
-7. Use bullet points or numbered lists only when helpful for clarity
-8. Never show raw JSON or technical data structures
+1. Answer in 1-2 sentences maximum
+2. Use actual data values but keep it brief
+3. Focus on the key insight or number
+4. No bullet points, lists, or verbose explanations
+5. Be direct and actionable
+6. Avoid technical jargon
 
-Generate a helpful, natural response that a warehouse manager would want to read:`;
+Generate a short, clear response:`;
 
     const response = await model.generateContent(prompt);
     return response.response.text();
@@ -50,47 +48,31 @@ function generateNaturalFallback(question: string, data: any, intent: string): s
     case 'current_bottleneck':
       if (data.bottlenecks && data.bottlenecks.length > 0) {
         const primary = data.bottlenecks[0];
-        let response = `I've identified the main bottleneck: **${primary.area}** (${primary.severity} severity). `;
-        response += `${primary.impact}. `;
-        response += `Recommended action: ${primary.action}.`;
-        
-        if (data.bottlenecks.length > 1) {
-          response += `\n\nOther issues to monitor: `;
-          data.bottlenecks.slice(1).forEach((b: any, i: number) => {
-            response += `${b.area} (${b.severity})`;
-            if (i < data.bottlenecks.length - 2) response += ', ';
-            else if (i === data.bottlenecks.length - 2) response += ' and ';
-          });
-          response += '.';
-        }
-        return response;
+        return `Main bottleneck: ${primary.area} (${primary.severity}). ${primary.action}.`;
       }
-      return "I'm analyzing the current operational status to identify bottlenecks...";
+      return "Analyzing bottlenecks...";
       
     case 'loading_status':
       if (data.summary) {
         const progress = Math.round((data.summary.totalLoaded / data.summary.totalAssigned) * 100);
-        return `Loading progress: ${data.summary.totalLoaded}/${data.summary.totalAssigned} crates loaded (${progress}% complete). ` +
-               `QC queue has ${data.summary.totalPending} pending crates.`;
+        return `${progress}% loading complete (${data.summary.totalLoaded}/${data.summary.totalAssigned} crates). ${data.summary.totalPending} pending in QC.`;
       }
-      return "I'm checking the current loading status...";
+      return "Checking loading status...";
       
     case 'sbl_prod_timeline':
       if (data.summary) {
-        return `SBL productivity: Peak at ${data.summary.peakInterval} with ${data.summary.peakProductivity} lines/hour. ` +
-               `Average: ${data.summary.averageProductivity} lines/hour. Total processed: ${data.summary.totalLines} lines.`;
+        return `SBL productivity: ${data.summary.averageProductivity} lines/hour average, peak ${data.summary.peakProductivity} at interval ${data.summary.peakInterval}.`;
       }
-      return "I'm analyzing SBL productivity trends...";
+      return "Analyzing SBL trends...";
       
     case 'ptl_picking_status':
       if (data.isPicking !== undefined) {
-        return `PTL is ${data.isPicking ? 'actively picking' : 'not picking'}. ` +
-               `Current productivity: ${data.currentProductivity} lines/hour per station (${data.performance}% of target).`;
+        return `PTL is ${data.isPicking ? 'active' : 'inactive'}. ${data.currentProductivity} lines/hour (${data.performance}% of target).`;
       }
-      return "I'm checking PTL picking status...";
+      return "Checking PTL status...";
       
     default:
-      return `I'm analyzing the ${intent.replace('_', ' ')} data to answer your question...`;
+      return `Analyzing ${intent.replace('_', ' ')} data...`;
   }
 }
 
