@@ -24,7 +24,7 @@ export const EXCEL_SCHEMAS: Record<string, ExcelValidationSchema> = {
       'sku_count', 'asn_quantity', 'received_qty', 'grnd_quantity'
     ],
     optionalColumns: [],
-    description: 'Cross-dock Progress (ASN Level)'
+    description: 'Cross-dock Progress'
   },
   'inbound_progress': {
     filename: 'inbound_progress',
@@ -43,7 +43,7 @@ export const EXCEL_SCHEMAS: Record<string, ExcelValidationSchema> = {
     optionalColumns: [
       'completion_percentage'
     ],
-    description: 'Station Backlog'
+    description: 'SBL line completion'
   },
   'ptl_productivity': {
     filename: 'ptl_productivity',
@@ -53,7 +53,7 @@ export const EXCEL_SCHEMAS: Record<string, ExcelValidationSchema> = {
     optionalColumns: [
       'first_scan_time'
     ],
-    description: 'PTL Productivity Over Time'
+    description: 'Overall PTL Productivity in lines per hour for every 10 minutes interval'
   },
   'ptl_table_lines': {
     filename: 'ptl_table_lines',
@@ -61,7 +61,7 @@ export const EXCEL_SCHEMAS: Record<string, ExcelValidationSchema> = {
       'interval_no', 'zone_code', 'line_count', 'productivity'
     ],
     optionalColumns: [],
-    description: 'PTL Table Lines'
+    description: 'PTL Productivity in lines per hour for every 10 minutes interval per station'
   },
   'sbl_infeed_rate': {
     filename: 'sbl_infeed_rate',
@@ -71,15 +71,15 @@ export const EXCEL_SCHEMAS: Record<string, ExcelValidationSchema> = {
     optionalColumns: [],
     description: 'SBL Infeed Rate'
   },
-  'sbl_productivity_withtime': {
-    filename: 'sbl_productivity_withtime',
+  'sbl_productivity': {
+    filename: 'sbl_productivity',
     requiredColumns: [
       'interval_no', 'total_line_count', 'productivity'
     ],
     optionalColumns: [
       'wave_number'
     ],
-    description: 'SBL Productivity Over Time'
+    description: 'SBL Productivity in lines per hour for every 10 minutes interval'
   },
   'station_wise_sbl_productivity': {
     filename: 'station_wise_sbl_productivity',
@@ -87,7 +87,35 @@ export const EXCEL_SCHEMAS: Record<string, ExcelValidationSchema> = {
       'interval_no', 'zone_code', 'total_line_count', 'productivity'
     ],
     optionalColumns: [],
-    description: 'Station Wise SBL Productivity'
+    description: 'Station Wise SBL Productivity per hour over every 10 minutes interval'
+  },
+  'sbl_summary': {
+    filename: 'sbl_summary',
+    requiredColumns: [
+      'metric', 'station_count'
+    ],
+    optionalColumns: [],
+    description: 'SBL Summary Query'
+  },
+  'sbl_table_lines': {
+    filename: 'sbl_table_lines',
+    requiredColumns: [
+      'interval_no', 'zone_code', 'total_line_count', 'productivity'
+    ],
+    optionalColumns: [],
+    description: 'SBL Table Lines Query'
+  },
+  'secondary_sortation': {
+    filename: 'secondary_sortation',
+    requiredColumns: [
+      'arm', 'bin_code', 'mm_trip', 'lm_trip',
+      'total_crate_count', 'palletized_crate_count',
+      'closed_crate_count', 'packing_crate_count',
+      'number_of_chu_at_qc', 'expected_crate_count',
+      'lm_trip_palletization_progress'
+    ],
+    optionalColumns: [],
+    description: 'Secondary Sortation Query'
   }
 };
 
@@ -168,8 +196,11 @@ function detectFileType(filename: string): string | null {
   if (lowerName.includes('ptl_productivity') && !lowerName.includes('table')) return 'ptl_productivity';
   if (lowerName.includes('ptl_table') && lowerName.includes('lines')) return 'ptl_table_lines';
   if (lowerName.includes('sbl_infeed_rate')) return 'sbl_infeed_rate';
-  if (lowerName.includes('sbl_productivity') && lowerName.includes('withtime')) return 'sbl_productivity_withtime';
+  if (lowerName.includes('sbl_productivity') && !lowerName.includes('table') && !lowerName.includes('station')) return 'sbl_productivity';
+  if (lowerName.includes('sbl_table') && lowerName.includes('lines')) return 'sbl_table_lines';
   if (lowerName.includes('station') && lowerName.includes('wise') && lowerName.includes('sbl')) return 'station_wise_sbl_productivity';
+  if (lowerName.includes('sbl_summary')) return 'sbl_summary';
+  if (lowerName.includes('secondary_sortation')) return 'secondary_sortation';
   
   return null;
 }
