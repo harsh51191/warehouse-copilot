@@ -22,6 +22,8 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult[] | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string>('');
+  const [apiKey, setApiKey] = useState('');
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
 
   // Handle escape key for modal
   useEffect(() => {
@@ -79,13 +81,24 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
       });
 
       setUploadProgress('Validating files...');
+      console.log('Uploading files:', selectedFiles.map(f => f.name));
+      
       const response = await fetch('/api/upload/replace-excel', {
         method: 'POST',
         body: formData,
       });
 
+      console.log('Upload response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Upload failed:', errorText);
+        throw new Error(`Upload failed: ${response.status} ${errorText}`);
+      }
+
       setUploadProgress('Processing data...');
       const result = await response.json();
+      console.log('Upload result:', result);
       
       if (result.success) {
         setUploadProgress('Generating analytics...');
@@ -118,7 +131,7 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
       setUploadResult([{
         filename: 'Upload Error',
         isValid: false,
-        errors: ['Failed to upload files'],
+        errors: [`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
         warnings: [],
         detectedType: null
       }]);
@@ -296,6 +309,49 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
               </div>
             )}
 
+            {/* API Key Input */}
+            <div className="mb-6">
+              <h3 className="text-base font-medium mb-3">API Configuration</h3>
+              {!showApiKeyInput ? (
+                <button
+                  onClick={() => setShowApiKeyInput(true)}
+                  className="w-full px-4 py-2 text-sm bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 border border-blue-200"
+                >
+                  Set Gemini API Key (Required for Copilot)
+                </button>
+              ) : (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-sm font-medium text-blue-800">Gemini API Key</span>
+                    <button 
+                      onClick={() => setShowApiKeyInput(false)}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <input
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="Enter your Gemini API Key"
+                    className="w-full px-3 py-2 text-sm border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+                  />
+                  <button
+                    onClick={() => {
+                      if (apiKey) {
+                        localStorage.setItem('gemini_api_key', apiKey);
+                        setShowApiKeyInput(false);
+                      }
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                  >
+                    Save API Key
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Missing Files Indicator */}
             {uploadResult && (
               <div className="mb-6">
@@ -352,6 +408,30 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
                       <p className="text-amber-600 mt-2">
                         <strong>Status:</strong> 7/8 files uploaded. Upload <code>ptl_table_lines.xlsx</code> for complete analytics!
                       </p>
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          onClick={() => {
+                            // Continue with current files
+                            if (onUploadComplete) {
+                              onUploadComplete();
+                            }
+                            setIsOpen(false);
+                          }}
+                          className="px-4 py-2 bg-amber-600 text-white text-sm rounded-md hover:bg-amber-700"
+                        >
+                          Continue with Current Files
+                        </button>
+                        <button
+                          onClick={() => {
+                            // Reset to allow more file selection
+                            setUploadResult(null);
+                            setSelectedFiles([]);
+                          }}
+                          className="px-4 py-2 bg-amber-100 text-amber-800 text-sm rounded-md hover:bg-amber-200 border border-amber-300"
+                        >
+                          Upload More Files
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
