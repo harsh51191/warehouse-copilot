@@ -6,7 +6,10 @@ import { RecommendationEngine } from '@/lib/analytics/recommendation-engine';
 
 export async function GET() {
   try {
-    const derivedDir = join(process.cwd(), 'data', 'derived');
+    // Use /tmp for Vercel compatibility in production
+    const derivedDir = process.env.NODE_ENV === 'production' 
+      ? '/tmp/data/derived' 
+      : join(process.cwd(), 'data', 'derived');
     const artifactsPath = join(derivedDir, 'dashboard_artifacts.json');
     
     try {

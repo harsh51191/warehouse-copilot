@@ -425,7 +425,11 @@ export class AnalyticsLogger {
   private logFile: string;
 
   constructor() {
-    this.logFile = join(process.cwd(), 'data', 'derived', 'calculation_log.json');
+    // Use /tmp for Vercel compatibility in production
+    const derivedDir = process.env.NODE_ENV === 'production' 
+      ? '/tmp/data/derived' 
+      : join(process.cwd(), 'data', 'derived');
+    this.logFile = join(derivedDir, 'calculation_log.json');
   }
 
   async logCalculation(step: string, input: any, output: any, metadata?: any): Promise<void> {
