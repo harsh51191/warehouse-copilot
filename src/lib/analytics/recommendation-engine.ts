@@ -130,34 +130,22 @@ export class RecommendationEngine {
     return factors.length > 0 ? factors.join(', ') : 'general delays';
   }
 
-  generateFactBasedAnswer(question: string, artifacts: DashboardArtifacts): string {
-    const lowerQuestion = question.toLowerCase();
+  async generateFactBasedAnswer(question: string, artifacts: DashboardArtifacts): Promise<string> {
+    // HYBRID APPROACH: Try specific handlers first, then LLM fallback
     
-    // Guardrails - only answer warehouse-related questions
-    const warehouseKeywords = [
-      'sbl', 'ptl', 'wave', 'station', 'productivity', 'loading', 'trip', 'lines', 
-      'completion', 'warehouse', 'picking', 'sorting', 'staging', 'crates', 
-      'skus', 'otif', 'risk', 'buffer', 'capacity', 'shortfall', 'starved',
-      'trend', 'performance', 'issues', 'recommendations', 'status', 'progress',
-      'infeed', 'feeding', 'packed', 'remaining', 'target', 'lph', 'throughput'
-    ];
-    
-    const isWarehouseQuestion = warehouseKeywords.some(keyword => lowerQuestion.includes(keyword));
-    
-    if (!isWarehouseQuestion) {
-      return "I can only answer questions about warehouse operations, SBL/PTL workflows, loading status, productivity, and related metrics. Please ask about warehouse operations like 'What is the SBL productivity?' or 'How is loading going?'";
-    }
-    
-    // Try specific handlers first (for common questions)
+    // 1. Try specific handlers for common, well-defined questions
     const specificAnswer = this.trySpecificHandlers(question, artifacts);
     if (specificAnswer) {
+      console.log('[RecommendationEngine] Using specific handler for:', question);
       return specificAnswer;
     }
     
-    // Fall back to LLM with structured data context
-    return this.generateLLMAnswer(question, artifacts);
+    // 2. Fall back to LLM for complex, creative, or unexpected questions
+    console.log('[RecommendationEngine] Using LLM for:', question);
+    return await this.generateLLMAnswer(question, artifacts);
   }
 
+  // DEPRECATED: Using LLM for all questions now
   private trySpecificHandlers(question: string, artifacts: DashboardArtifacts): string | null {
     const lowerQuestion = question.toLowerCase();
     
@@ -202,29 +190,7 @@ export class RecommendationEngine {
       return `SBL completion is ${completionPct}% (${sblCompleted.toLocaleString()} of ${sblTotal.toLocaleString()} lines completed). ${sblRemaining.toLocaleString()} lines remaining.`;
     }
     
-    // Handle SBL productivity questions
-    if (lowerQuestion.includes('sbl') && lowerQuestion.includes('productivity')) {
-      const emaLPH = artifacts.sbl_stream?.ema_lph || 0;
-      const lastHourAvg = artifacts.sbl_stream?.last_hour_avg || 0;
-      const targetLPH = STAGE_TARGETS.SBL.target_lph;
-      
-      // Calculate actual productivity from stations if stream data is 0
-      if (emaLPH === 0 && lastHourAvg === 0 && artifacts.sbl_stations && artifacts.sbl_stations.length > 0) {
-        const totalPacked = artifacts.sbl_stations.reduce((sum, s) => sum + (s.packed || 0), 0);
-        const totalStations = artifacts.sbl_stations.length;
-        const avgProductivity = totalStations > 0 ? Math.round(totalPacked / totalStations) : 0;
-        
-        return `SBL productivity averaged ${avgProductivity} lines per station. Total packed: ${totalPacked} lines across ${totalStations} stations.`;
-      }
-      
-      if (emaLPH === 0 && lastHourAvg === 0) {
-        return `SBL productivity data is not available in the uploaded files. To get accurate productivity metrics, please upload the 'sbl_productivity.xlsx' file which contains interval-based productivity data.`;
-      }
-      
-      return `Average SBL productivity in the last hour was ${lastHourAvg} LPH (${Math.round((lastHourAvg / targetLPH) * 100)}% of target). Current EMA is ${emaLPH} LPH with a ${artifacts.sbl_stream.trend} trend.`;
-    }
-    
-    // Handle SBL station productivity ranking questions
+    // Handle SBL station productivity ranking questions (MUST come before general SBL productivity)
     if (lowerQuestion.includes('sbl') && (lowerQuestion.includes('lowest') || lowerQuestion.includes('worst') || lowerQuestion.includes('bottom')) && lowerQuestion.includes('productivity')) {
       if (artifacts.sbl_stations.length === 0) {
         return `SBL station data is not available. Please upload the 'line_completion_2.xlsx' and 'sbl_table_lines.xlsx' files to get station productivity information.`;
@@ -269,6 +235,28 @@ export class RecommendationEngine {
       return `The station with the highest productivity in SBL is ${highestStation.station_code} at ${highestStation.last10_lph} LPH (${performancePct}% of target). This station has ${highestStation.remaining} lines remaining and is performing well.`;
     }
     
+    // Handle general SBL productivity questions (MUST come after specific handlers)
+    if (lowerQuestion.includes('sbl') && lowerQuestion.includes('productivity')) {
+      const emaLPH = artifacts.sbl_stream?.ema_lph || 0;
+      const lastHourAvg = artifacts.sbl_stream?.last_hour_avg || 0;
+      const targetLPH = STAGE_TARGETS.SBL.target_lph;
+      
+      // Calculate actual productivity from stations if stream data is 0
+      if (emaLPH === 0 && lastHourAvg === 0 && artifacts.sbl_stations && artifacts.sbl_stations.length > 0) {
+        const totalPacked = artifacts.sbl_stations.reduce((sum, s) => sum + (s.packed || 0), 0);
+        const totalStations = artifacts.sbl_stations.length;
+        const avgProductivity = totalStations > 0 ? Math.round(totalPacked / totalStations) : 0;
+        
+        return `SBL productivity averaged ${avgProductivity} lines per station. Total packed: ${totalPacked} lines across ${totalStations} stations.`;
+      }
+      
+      if (emaLPH === 0 && lastHourAvg === 0) {
+        return `SBL productivity data is not available in the uploaded files. To get accurate productivity metrics, please upload the 'sbl_productivity.xlsx' file which contains interval-based productivity data.`;
+      }
+      
+      return `Average SBL productivity in the last hour was ${lastHourAvg} LPH (${Math.round((lastHourAvg / targetLPH) * 100)}% of target). Current EMA is ${emaLPH} LPH with a ${artifacts.sbl_stream.trend} trend.`;
+    }
+    
     // Handle PTL station count questions
     if (lowerQuestion.includes('ptl station') && (lowerQuestion.includes('how many') || lowerQuestion.includes('count') || lowerQuestion.includes('number') || lowerQuestion.includes('active'))) {
       const activeStations = artifacts.ptl_totals?.by_station?.length || 0;
@@ -303,8 +291,38 @@ export class RecommendationEngine {
       return response;
     }
 
-    // Handle PTL productivity questions
-    if (lowerQuestion.includes('ptl productivity') && (lowerQuestion.includes('hour') || lowerQuestion.includes('avg'))) {
+    // Handle PTL station productivity ranking questions (MUST come before general PTL productivity)
+    if (lowerQuestion.includes('ptl') && (lowerQuestion.includes('lowest') || lowerQuestion.includes('worst') || lowerQuestion.includes('bottom')) && lowerQuestion.includes('productivity')) {
+      if (!artifacts.ptl_totals?.by_station || artifacts.ptl_totals.by_station.length === 0) {
+        return `PTL station data is not available. Please upload the 'ptl_productivity.xlsx' and 'ptl_table_lines.xlsx' files to get station productivity information.`;
+      }
+      
+      // Sort stations by productivity (lowest first)
+      const sortedStations = [...artifacts.ptl_totals.by_station].sort((a: any, b: any) => (a.productivity || 0) - (b.productivity || 0));
+      const lowestStation = sortedStations[0];
+      const targetLPH = STAGE_TARGETS.PTL.target_lph;
+      const performancePct = Math.round(((lowestStation.productivity || 0) / targetLPH) * 100);
+      
+      return `The station with the lowest productivity in PTL is ${lowestStation.station_code || 'Unknown'} at ${lowestStation.productivity || 0} LPH (${performancePct}% of target). This station has ${lowestStation.lines_remaining || 0} lines remaining.`;
+    }
+    
+    // Handle PTL station productivity ranking questions (highest)
+    if (lowerQuestion.includes('ptl') && (lowerQuestion.includes('highest') || lowerQuestion.includes('best') || lowerQuestion.includes('top')) && lowerQuestion.includes('productivity')) {
+      if (!artifacts.ptl_totals?.by_station || artifacts.ptl_totals.by_station.length === 0) {
+        return `PTL station data is not available. Please upload the 'ptl_productivity.xlsx' and 'ptl_table_lines.xlsx' files to get station productivity information.`;
+      }
+      
+      // Sort stations by productivity (highest first)
+      const sortedStations = [...artifacts.ptl_totals.by_station].sort((a: any, b: any) => (b.productivity || 0) - (a.productivity || 0));
+      const highestStation = sortedStations[0];
+      const targetLPH = STAGE_TARGETS.PTL.target_lph;
+      const performancePct = Math.round(((highestStation.productivity || 0) / targetLPH) * 100);
+      
+      return `The station with the highest productivity in PTL is ${highestStation.station_code || 'Unknown'} at ${highestStation.productivity || 0} LPH (${performancePct}% of target). This station has ${highestStation.lines_remaining || 0} lines remaining and is performing well.`;
+    }
+    
+    // Handle general PTL productivity questions (MUST come after specific handlers)
+    if (lowerQuestion.includes('ptl') && lowerQuestion.includes('productivity')) {
       const emaLPH = artifacts.ptl_stream.ema_lph;
       const lastHourAvg = artifacts.ptl_stream.last_hour_avg;
       const targetLPH = STAGE_TARGETS.PTL.target_lph;
@@ -523,14 +541,82 @@ export class RecommendationEngine {
     return null;
   }
 
-  private generateLLMAnswer(question: string, artifacts: DashboardArtifacts): string {
-    // Prepare structured data context for LLM
-    const context = {
+  private async generateLLMAnswer(question: string, artifacts: DashboardArtifacts): Promise<string> {
+    try {
+      // Import Gemini dynamically to avoid issues in different environments
+      const { GoogleGenerativeAI } = await import("@google/generative-ai");
+      
+      const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+      
+      if (!apiKey) {
+        // Fallback to structured response if no API key
+        return this.generateStructuredFallback(question, artifacts);
+      }
+
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      // Prepare comprehensive data context
+      const context = this.prepareDataContext(artifacts);
+
+      const prompt = `You are a warehouse operations expert. Answer the user's question about warehouse operations using ONLY the provided data context.
+
+WAREHOUSE DATA CONTEXT:
+${JSON.stringify(context, null, 2)}
+
+USER QUESTION: ${question}
+
+INSTRUCTIONS:
+1. Only answer questions related to warehouse operations (SBL, PTL, loading, productivity, stations, trips, etc.)
+2. If the question is NOT about warehouse operations, respond: "I can only answer questions about warehouse operations, SBL/PTL workflows, loading status, productivity, and related metrics. Please ask about warehouse operations like 'What is the SBL productivity?' or 'How is loading going?'"
+3. Use the exact data from the context to answer warehouse questions
+4. Be specific and data-driven in your responses
+5. If you need to calculate something, show your work
+6. Keep responses concise but informative
+
+Answer:`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text();
+
+    } catch (error) {
+      console.error('LLM Error:', error);
+      // Fallback to structured response
+      return this.generateStructuredFallback(question, artifacts);
+    }
+  }
+
+  private prepareDataContext(artifacts: DashboardArtifacts): any {
+    return {
+      wave_info: {
+        wave_id: artifacts.macros?.waveInfo?.wave_id || 'Unknown',
+        total_order_lines: artifacts.macros?.waveInfo?.total_order_lines || 0,
+        split_lines_sbl: artifacts.macros?.waveInfo?.split_lines_sbl || 0,
+        split_lines_ptl: artifacts.macros?.waveInfo?.split_lines_ptl || 0,
+        projected_finish_iso: (artifacts.macros?.waveInfo as any)?.projected_finish_iso || 'Unknown',
+        buffer_minutes: artifacts.overall_summary.buffer_minutes || 0
+      },
       overall_summary: {
         wave_status: artifacts.overall_summary.wave_status,
         otif_risk: artifacts.overall_summary.otif_risk,
         buffer_minutes: artifacts.overall_summary.buffer_minutes,
-        line_coverage_pct: Math.round(artifacts.overall_summary.line_coverage_pct * 100)
+        line_coverage_pct: Math.round(artifacts.overall_summary.line_coverage_pct * 100),
+        sbl_coverage_pct: Math.round((artifacts.overall_summary as any).sbl_coverage_pct * 100),
+        ptl_coverage_pct: Math.round((artifacts.overall_summary as any).ptl_coverage_pct * 100)
+      },
+      sbl_status: {
+        total_stations: artifacts.sbl_stations?.length || 0,
+        productivity_issues: artifacts.sbl_stations?.filter(s => s.is_productivity_issue).length || 0,
+        infeed_issues: artifacts.sbl_stations?.filter(s => s.is_infeed_issue).length || 0,
+        healthy_stations: artifacts.sbl_stations?.filter(s => s.issue_type === 'none').length || 0,
+        starved_stations: artifacts.sbl_stations?.filter(s => s.starved).length || 0,
+        avg_productivity: artifacts.sbl_stream?.ema_lph || 0,
+        last_hour_avg: artifacts.sbl_stream?.last_hour_avg || 0,
+        trend: artifacts.sbl_stream?.trend || 'stable',
+        total_packed: artifacts.sbl_stations?.reduce((sum, s) => sum + s.packed, 0) || 0,
+        total_remaining: artifacts.sbl_stations?.reduce((sum, s) => sum + s.remaining, 0) || 0,
+        completion_pct: Math.round((artifacts.sbl_stations?.reduce((sum, s) => sum + s.packed, 0) || 0) / (artifacts.macros?.waveInfo?.split_lines_sbl || 1) * 100)
       },
       sbl_stations: artifacts.sbl_stations.map(s => ({
         station_code: s.station_code,
@@ -538,31 +624,74 @@ export class RecommendationEngine {
         target_lph: s.target_lph,
         completion_pct: Math.round(s.completion_pct * 100),
         remaining_lines: s.remaining,
+        packed_lines: s.packed,
         issue_type: s.issue_type,
-        starved: s.starved
+        starved: s.starved,
+        is_productivity_issue: s.is_productivity_issue,
+        is_infeed_issue: s.is_infeed_issue
       })),
-      sbl_stream: {
-        ema_lph: artifacts.sbl_stream.ema_lph,
-        last_hour_avg: artifacts.sbl_stream.last_hour_avg,
-        trend: artifacts.sbl_stream.trend
+      ptl_status: {
+        total_stations: artifacts.ptl_totals?.by_station?.length || 0,
+        avg_productivity: artifacts.ptl_stream?.ema_lph || 0,
+        last_hour_avg: artifacts.ptl_stream?.last_hour_avg || 0,
+        trend: artifacts.ptl_stream?.trend || 'stable',
+        shortfall: artifacts.ptl_stream?.shortfall || false,
+        shortfall_factor: Math.round((artifacts.ptl_stream?.shortfall_factor || 0) * 100),
+        lines_processed: artifacts.ptl_totals?.last_hour_lines || 0,
+        total_assigned: artifacts.macros?.waveInfo?.split_lines_ptl || 0,
+        completion_pct: Math.round(((artifacts.ptl_totals?.last_hour_lines || 0) / (artifacts.macros?.waveInfo?.split_lines_ptl || 1)) * 100)
       },
-      ptl_stream: {
-        ema_lph: artifacts.ptl_stream.ema_lph,
-        last_hour_avg: artifacts.ptl_stream.last_hour_avg,
-        trend: artifacts.ptl_stream.trend,
-        shortfall: artifacts.ptl_stream.shortfall,
-        shortfall_factor: Math.round(artifacts.ptl_stream.shortfall_factor * 100)
+      loading_status: {
+        total_trips: artifacts.trips?.length || 0,
+        loaded_trips: artifacts.trips?.filter(t => t.loaded_pct >= 90).length || 0,
+        at_risk_trips: artifacts.trips?.filter(t => t.risk >= 0.6).length || 0,
+        avg_loaded_pct: Math.round((artifacts.trips?.reduce((sum, t) => sum + t.loaded_pct, 0) || 0) / (artifacts.trips?.length || 1) * 100),
+        total_crates: artifacts.trips?.reduce((sum, t) => sum + ((t as any).total || 0), 0) || 0,
+        loaded_crates: artifacts.trips?.reduce((sum, t) => sum + Math.round(t.loaded_pct * ((t as any).total || 0)), 0) || 0
       },
       trips: artifacts.trips.map(t => ({
         mm_trip: t.mm_trip,
         loaded_pct: Math.round(t.loaded_pct * 100),
         risk: Math.round(t.risk * 100),
-        health_color: t.health_color
+        health_color: t.health_color,
+        total: (t as any).total || 0,
+        loaded: Math.round(t.loaded_pct * ((t as any).total || 0))
+      })),
+      sbl_skus: {
+        total_skus: artifacts.sbl_infeed?.skus?.length || 0,
+        pending_skus: artifacts.sbl_infeed?.skus?.filter((s: any) => s.pending_qty > 0).length || 0,
+        completed_skus: artifacts.sbl_infeed?.skus?.filter((s: any) => s.pending_qty === 0).length || 0,
+        completion_rate: artifacts.sbl_infeed?.skus && artifacts.sbl_infeed.skus.length > 0 ? Math.round((artifacts.sbl_infeed.skus.filter((s: any) => s.pending_qty === 0).length / artifacts.sbl_infeed.skus.length) * 100) : 0,
+        top_pending: artifacts.sbl_infeed?.skus?.filter((s: any) => s.pending_qty > 0).sort((a: any, b: any) => b.pending_qty - a.pending_qty).slice(0, 5) || []
+      },
+      recommendations: this.generateRecommendations(artifacts).slice(0, 3).map(r => ({
+        title: r.title,
+        rationale: r.rationale,
+        impact_estimate: r.impact_estimate,
+        priority: r.priority
       }))
     };
+  }
 
-    // For now, provide a structured overview answer
-    // In production, this would call the LLM with the context
+  private generateStructuredFallback(question: string, artifacts: DashboardArtifacts): string {
+    const lowerQuestion = question.toLowerCase();
+    
+    // Check if this is a warehouse-related question
+    const warehouseKeywords = [
+      'sbl', 'ptl', 'wave', 'station', 'productivity', 'loading', 'trip', 'lines', 
+      'completion', 'warehouse', 'picking', 'sorting', 'staging', 'crates', 
+      'skus', 'otif', 'risk', 'buffer', 'capacity', 'shortfall', 'starved',
+      'trend', 'performance', 'issues', 'recommendations', 'status', 'progress',
+      'infeed', 'feeding', 'packed', 'remaining', 'target', 'lph', 'throughput'
+    ];
+    
+    const isWarehouseQuestion = warehouseKeywords.some(keyword => lowerQuestion.includes(keyword));
+    
+    if (!isWarehouseQuestion) {
+      return "I can only answer questions about warehouse operations, SBL/PTL workflows, loading status, productivity, and related metrics. Please ask about warehouse operations like 'What is the SBL productivity?' or 'How is loading going?'";
+    }
+
+    // Provide a structured overview answer
     const recommendations = this.generateRecommendations(artifacts);
     const topRecommendation = recommendations[0];
     

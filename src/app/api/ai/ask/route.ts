@@ -95,7 +95,7 @@ export async function POST(req: Request) {
 
 			// Use recommendation engine to generate answer
 			const recommendationEngine = new RecommendationEngine();
-			const answer = recommendationEngine.generateFactBasedAnswer(question, artifacts);
+			const answer = await recommendationEngine.generateFactBasedAnswer(question, artifacts);
 			
 			console.log('[AI API] Generated answer:', answer);
 			
