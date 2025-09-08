@@ -409,6 +409,8 @@ async function fetchDashboardArtifacts() {
     if (!response.ok) throw new Error(`Failed to fetch dashboard artifacts: ${response.status}`);
     const data = await response.json();
     console.log('Dashboard data received:', data);
+    console.log('Overall summary:', data.data?.overall_summary);
+    console.log('Macros:', data.data?.macros);
     return data.data || null;
   } catch (error) {
     console.error('Error fetching dashboard artifacts:', error);
