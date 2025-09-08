@@ -145,15 +145,16 @@ export class RecommendationEngine {
     const lowerQuestion = question.toLowerCase();
     
     // Handle questions about total lines
-    if (lowerQuestion.includes('total lines') && lowerQuestion.includes('wave')) {
+    if (lowerQuestion.includes('total lines')) {
       const totalLines = artifacts.macros?.waveInfo?.total_order_lines || 0;
       const sblLines = artifacts.macros?.waveInfo?.split_lines_sbl || 0;
       const ptlLines = artifacts.macros?.waveInfo?.split_lines_ptl || 0;
+      const fcLines = artifacts.macros?.waveInfo?.split_lines_fc || 0;
       const packedLines = artifacts.sbl_stations.reduce((sum, station) => sum + station.packed, 0);
       const remainingLines = totalLines - packedLines;
       const completionPct = totalLines > 0 ? (packedLines / totalLines) * 100 : 0;
       
-      return `There are a total of ${totalLines.toLocaleString()} lines in the wave, with ${packedLines.toLocaleString()} lines packed and ${remainingLines.toLocaleString()} lines pending. The average completion across all stations is ${completionPct.toFixed(2)}%. SBL handles ${sblLines.toLocaleString()} lines, PTL handles ${ptlLines.toLocaleString()} lines.`;
+      return `Wave Total Lines: ${totalLines.toLocaleString()} lines\n\nBreakdown:\n• SBL: ${sblLines.toLocaleString()} lines\n• PTL: ${ptlLines.toLocaleString()} lines\n• FC: ${fcLines.toLocaleString()} lines\n\nProgress: ${packedLines.toLocaleString()} lines completed (${completionPct.toFixed(1)}%), ${remainingLines.toLocaleString()} lines remaining.`;
     }
     
     // Handle SBL lines questions

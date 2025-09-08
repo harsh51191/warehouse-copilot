@@ -25,6 +25,27 @@ export interface AnalysisResult {
 export async function analyseQuery(question: string): Promise<AnalysisResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   
+  // Check if question is warehouse-related
+  const lowerQuestion = question.toLowerCase();
+  const warehouseKeywords = [
+    'sbl', 'ptl', 'wave', 'station', 'productivity', 'loading', 'trip', 'lines', 
+    'completion', 'warehouse', 'picking', 'sorting', 'staging', 'crates', 
+    'skus', 'otif', 'risk', 'buffer', 'capacity', 'shortfall', 'starved',
+    'trend', 'performance', 'issues', 'recommendations', 'status'
+  ];
+  
+  const isWarehouseQuestion = warehouseKeywords.some(keyword => lowerQuestion.includes(keyword));
+  
+  if (!isWarehouseQuestion) {
+    return {
+      reasoning: "Question is not related to warehouse operations",
+      intent: "general",
+      parameters: {},
+      answer: "I can only answer questions about warehouse operations, SBL/PTL workflows, loading status, productivity, and related metrics. Please ask about warehouse operations like 'What is the SBL productivity?' or 'How is loading going?'",
+      uiPatch: {}
+    };
+  }
+  
   // First, try to get analytics-based answer if available
   try {
     // Import the analytics functions directly instead of making HTTP requests
@@ -41,7 +62,6 @@ export async function analyseQuery(question: string): Promise<AnalysisResult> {
         const factBasedAnswer = recommendationEngine.generateFactBasedAnswer(question, artifacts);
         
         // Determine UI highlights based on question
-        const lowerQuestion = question.toLowerCase();
         let highlights: string[] = [];
         
         if (lowerQuestion.includes('sbl')) highlights.push('SBLTrend', 'SBLStations');
@@ -68,7 +88,7 @@ export async function analyseQuery(question: string): Promise<AnalysisResult> {
       reasoning: 'No GEMINI_API_KEY set; LLM classification unavailable',
       intent: 'unknown',
       parameters: {},
-      answer: 'I need a GEMINI_API_KEY to understand your question. Please set the GEMINI_API_KEY environment variable to enable intelligent question analysis. Without it, I can only provide basic responses.',
+      answer: 'I can only answer warehouse-related questions based on uploaded data. Please ask about SBL productivity, PTL performance, loading status, wave progress, or station completion. For general questions, I\'m designed specifically for warehouse operations.',
       uiPatch: { highlight: [] }
     };
   }
