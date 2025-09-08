@@ -465,6 +465,7 @@ export default function VapiWaveCopilotDual() {
   const [modalContent, setModalContent] = useState<any>(null);
   const [apiKey, setApiKey] = useState('');
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Handle escape key for modal
   useEffect(() => {
@@ -1308,6 +1309,7 @@ export default function VapiWaveCopilotDual() {
             <ExcelUpload onUploadComplete={() => {
               // Refresh data after upload
               const loadData = async () => {
+                setIsRefreshing(true);
                 setIsDataLoading(true);
                 try {
                   const [artifacts, recs, sblTimeline, ptlTimeline] = await Promise.all([
@@ -1329,6 +1331,7 @@ export default function VapiWaveCopilotDual() {
                   console.error('Error loading data:', error);
                 } finally {
                   setIsDataLoading(false);
+                  setIsRefreshing(false);
                 }
               };
               loadData();
@@ -1338,6 +1341,14 @@ export default function VapiWaveCopilotDual() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 pb-8">
+        {/* Data Refresh Indicator */}
+        {isRefreshing && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <span className="text-blue-800 text-sm font-medium">Refreshing dashboard data...</span>
+          </div>
+        )}
+        
         {UnifiedThreePanel}
       </main>
 

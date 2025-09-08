@@ -92,14 +92,21 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
         // Add a small delay to show the analytics generation step
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        setUploadProgress('Complete!');
+        setUploadProgress('Complete! Refreshing dashboard...');
         setUploadResult(result.validationResults);
         setSelectedFiles([]);
         
+        // Trigger data refresh
+        if (onUploadComplete) {
+          onUploadComplete();
+        }
+        
         // Show success message briefly before closing
         setTimeout(() => {
-          setIsOpen(false);
-          onUploadComplete?.();
+          setUploadProgress('Upload successful! Dashboard refreshed.');
+          setTimeout(() => {
+            setIsOpen(false);
+          }, 1000);
         }, 1500);
       } else {
         setUploadProgress('Upload failed');
