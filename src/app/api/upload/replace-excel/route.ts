@@ -92,10 +92,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Get data directory - use /tmp for Vercel compatibility
-    const dataDir = process.env.NODE_ENV === 'production' 
+    const dataDir = process.env.VERCEL === '1' 
       ? '/tmp/data' 
       : (process.env.DATA_DIR || join(process.cwd(), 'data'));
     console.log('Data directory:', dataDir);
+    console.log('VERCEL env:', process.env.VERCEL);
+    console.log('NODE_ENV:', process.env.NODE_ENV);
     
     // Ensure directory exists
     try {

@@ -28,7 +28,7 @@ export function findLatestMatchingFile(dir: string, prefix: string): string | nu
 
 export function getDataDir(): string {
 	// Use /tmp/data for Vercel compatibility in production
-	if (process.env.NODE_ENV === 'production') {
+	if (process.env.VERCEL === '1') {
 		return '/tmp/data';
 	}
 	

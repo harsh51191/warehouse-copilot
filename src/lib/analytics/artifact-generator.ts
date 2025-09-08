@@ -11,7 +11,7 @@ export class ArtifactGenerator {
 
   constructor() {
     // Use /tmp for Vercel compatibility in production
-    this.derivedDir = process.env.NODE_ENV === 'production' 
+    this.derivedDir = process.env.VERCEL === '1' 
       ? '/tmp/data/derived' 
       : join(process.cwd(), 'data', 'derived');
     this.logger = new AnalyticsLogger();

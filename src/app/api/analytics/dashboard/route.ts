@@ -13,6 +13,20 @@ export async function GET() {
     
     console.log('[DASHBOARD API] Looking for artifacts at:', artifactsPath);
     console.log('[DASHBOARD API] VERCEL env:', process.env.VERCEL);
+    console.log('[DASHBOARD API] NODE_ENV:', process.env.NODE_ENV);
+    
+    // Check if directory exists
+    try {
+      const fs = await import('fs');
+      const dirExists = fs.existsSync(derivedDir);
+      console.log('[DASHBOARD API] Derived dir exists:', dirExists);
+      if (dirExists) {
+        const files = fs.readdirSync(derivedDir);
+        console.log('[DASHBOARD API] Files in derived dir:', files);
+      }
+    } catch (e) {
+      console.log('[DASHBOARD API] Error checking directory:', e);
+    }
     
     try {
       const artifactsData = await readFile(artifactsPath, 'utf-8');
