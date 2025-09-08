@@ -177,9 +177,18 @@ export class RecommendationEngine {
     
     // Handle SBL productivity questions
     if (lowerQuestion.includes('sbl productivity') && (lowerQuestion.includes('hour') || lowerQuestion.includes('avg'))) {
-      const emaLPH = artifacts.sbl_stream.ema_lph;
-      const lastHourAvg = artifacts.sbl_stream.last_hour_avg;
+      const emaLPH = artifacts.sbl_stream?.ema_lph || 0;
+      const lastHourAvg = artifacts.sbl_stream?.last_hour_avg || 0;
       const targetLPH = STAGE_TARGETS.SBL.target_lph;
+      
+      // Calculate actual productivity from stations if stream data is 0
+      if (emaLPH === 0 && lastHourAvg === 0 && artifacts.sbl_stations && artifacts.sbl_stations.length > 0) {
+        const totalPacked = artifacts.sbl_stations.reduce((sum, s) => sum + (s.packed || 0), 0);
+        const totalStations = artifacts.sbl_stations.length;
+        const avgProductivity = totalStations > 0 ? Math.round(totalPacked / totalStations) : 0;
+        
+        return `SBL productivity averaged ${avgProductivity} lines per station. Total packed: ${totalPacked} lines across ${totalStations} stations.`;
+      }
       
       if (emaLPH === 0 && lastHourAvg === 0) {
         return `SBL productivity data is not available in the uploaded files. To get accurate productivity metrics, please upload the 'sbl_productivity.xlsx' file which contains interval-based productivity data.`;
@@ -353,7 +362,7 @@ export class RecommendationEngine {
     // Handle general loading status questions
     if (lowerQuestion.includes('loading') || lowerQuestion.includes('what') && lowerQuestion.includes('happening')) {
       if (!artifacts.trips || artifacts.trips.length === 0) {
-        return `Loading status data is not available in the uploaded files. To get detailed loading status, please upload the 'updated_loading_dashboard_query.xlsx' file which contains trip-wise loading progress, dock queues, and risk assessments.`;
+        return `Loading Status: No trips currently in progress. Wave status: ${artifacts.overall_summary?.wave_status || 'Unknown'}. SBL: ${artifacts.sbl_stations?.length || 0} stations active, PTL: ${artifacts.ptl_totals?.total_lines || 0} lines processed.`;
       }
       
       const totalTrips = artifacts.trips.length;
@@ -443,7 +452,12 @@ export class RecommendationEngine {
     // Handle SBL SKUs questions
     if (lowerQuestion.includes('sbl') && (lowerQuestion.includes('sku') || lowerQuestion.includes('pending'))) {
       if (!artifacts.sbl_infeed || !artifacts.sbl_infeed.skus || artifacts.sbl_infeed.skus.length === 0) {
-        return "No SBL infeed data available. Please upload the partial_hus_pending_based_on_gtp_demand.xlsx file to see SKU status and pending information.";
+        // Fallback to general SBL data if infeed data not available
+        const totalSBLStations = artifacts.sbl_stations?.length || 0;
+        const totalPacked = artifacts.sbl_stations?.reduce((sum, s) => sum + (s.packed || 0), 0) || 0;
+        const totalRemaining = artifacts.sbl_stations?.reduce((sum, s) => sum + (s.remaining || 0), 0) || 0;
+        
+        return `SBL Status: ${totalSBLStations} stations active. ${totalPacked} lines packed, ${totalRemaining} lines remaining. For detailed SKU information, please upload the partial_hus_pending_based_on_gtp_demand.xlsx file.`;
       }
       
       const infeed = artifacts.sbl_infeed;
@@ -456,6 +470,8 @@ export class RecommendationEngine {
         pendingSKUs.sort((a: any, b: any) => b.pending_qty - a.pending_qty).forEach((sku: any, index: number) => {
           response += `${index + 1}. ${sku.sku_code} - ${sku.pending_qty} qty needed\n`;
         });
+      } else {
+        response += `All SKUs have been fed for SBL. No pending quantities.`;
       }
       
       return response;
