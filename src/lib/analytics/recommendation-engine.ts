@@ -303,7 +303,7 @@ export class RecommendationEngine {
       const targetLPH = STAGE_TARGETS.PTL.target_lph;
       const performancePct = Math.round(((lowestStation.productivity || 0) / targetLPH) * 100);
       
-      return `The station with the lowest productivity in PTL is ${lowestStation.station_code || 'Unknown'} at ${lowestStation.productivity || 0} LPH (${performancePct}% of target). This station has ${lowestStation.lines_remaining || 0} lines remaining.`;
+      return `The station with the lowest productivity in PTL is ${lowestStation.station_code || 'Unknown'} at ${lowestStation.productivity || 0} LPH (${performancePct}% of target). This station processed ${lowestStation.lines_last_hour || 0} lines in the last hour.`;
     }
     
     // Handle PTL station productivity ranking questions (highest)
@@ -318,7 +318,7 @@ export class RecommendationEngine {
       const targetLPH = STAGE_TARGETS.PTL.target_lph;
       const performancePct = Math.round(((highestStation.productivity || 0) / targetLPH) * 100);
       
-      return `The station with the highest productivity in PTL is ${highestStation.station_code || 'Unknown'} at ${highestStation.productivity || 0} LPH (${performancePct}% of target). This station has ${highestStation.lines_remaining || 0} lines remaining and is performing well.`;
+      return `The station with the highest productivity in PTL is ${highestStation.station_code || 'Unknown'} at ${highestStation.productivity || 0} LPH (${performancePct}% of target). This station processed ${highestStation.lines_last_hour || 0} lines in the last hour and is performing well.`;
     }
     
     // Handle general PTL productivity questions (MUST come after specific handlers)

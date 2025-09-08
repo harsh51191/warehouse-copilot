@@ -65,7 +65,7 @@ export async function analyseQuery(question: string): Promise<AnalysisResult> {
         if (artifacts && artifacts.overall_summary) {
           console.log('[ORCHESTRATOR] Artifacts generated, creating recommendation engine...');
           const recommendationEngine = new RecommendationEngine();
-          const factBasedAnswer = recommendationEngine.generateFactBasedAnswer(question, artifacts);
+          const factBasedAnswer = await recommendationEngine.generateFactBasedAnswer(question, artifacts);
           
           console.log('[ORCHESTRATOR] Generated answer:', factBasedAnswer);
           
@@ -101,7 +101,7 @@ export async function analyseQuery(question: string): Promise<AnalysisResult> {
         if (artifacts && artifacts.overall_summary) {
           console.log('[ORCHESTRATOR] Artifacts found, creating recommendation engine...');
           const recommendationEngine = new RecommendationEngine();
-          const factBasedAnswer = recommendationEngine.generateFactBasedAnswer(question, artifacts);
+          const factBasedAnswer = await recommendationEngine.generateFactBasedAnswer(question, artifacts);
           
           console.log('[ORCHESTRATOR] Generated answer:', factBasedAnswer);
           
