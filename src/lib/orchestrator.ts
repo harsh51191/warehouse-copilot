@@ -50,41 +50,82 @@ export async function analyseQuery(question: string): Promise<AnalysisResult> {
   try {
     console.log('[ORCHESTRATOR] Attempting analytics-based answer for:', question);
     
-    // Make API call to get dashboard artifacts
-    const baseUrl = typeof window !== 'undefined' ? '' : process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/analytics/dashboard`);
-    
-    if (response.ok) {
-      const data = await response.json();
-      const artifacts = data.data;
+    // Check if we're on the server side (no window object)
+    if (typeof window === 'undefined') {
+      // Server side - import and use directly
+      const { getProcessedMacros } = await import('../server/datasource/macros-adapter');
+      const { ArtifactGenerator } = await import('./analytics/artifact-generator');
       
-      if (artifacts && artifacts.overall_summary) {
-        console.log('[ORCHESTRATOR] Artifacts found, creating recommendation engine...');
-        const recommendationEngine = new RecommendationEngine();
-        const factBasedAnswer = recommendationEngine.generateFactBasedAnswer(question, artifacts);
+      const macros = await getProcessedMacros();
+      if (macros) {
+        console.log('[ORCHESTRATOR] Macros found, generating artifacts...');
+        const generator = new ArtifactGenerator();
+        const artifacts = await generator.generateDashboardArtifacts(macros);
         
-        console.log('[ORCHESTRATOR] Generated answer:', factBasedAnswer);
-        
-        // Determine UI highlights based on question
-        let highlights: string[] = [];
-        
-        if (lowerQuestion.includes('sbl')) highlights.push('SBLTrend', 'SBLStations');
-        if (lowerQuestion.includes('ptl')) highlights.push('PTLTrend', 'PTLTotals');
-        if (lowerQuestion.includes('trip') || lowerQuestion.includes('loading')) highlights.push('TripsGrid');
-        if (lowerQuestion.includes('otif') || lowerQuestion.includes('overall')) highlights.push('WaveSummary');
-        
-        return {
-          reasoning: 'Analytics-based fact-driven response using dashboard artifacts',
-          intent: 'analytics_based',
-          parameters: {},
-          answer: factBasedAnswer,
-          uiPatch: { highlight: highlights }
-        };
+        if (artifacts && artifacts.overall_summary) {
+          console.log('[ORCHESTRATOR] Artifacts generated, creating recommendation engine...');
+          const recommendationEngine = new RecommendationEngine();
+          const factBasedAnswer = recommendationEngine.generateFactBasedAnswer(question, artifacts);
+          
+          console.log('[ORCHESTRATOR] Generated answer:', factBasedAnswer);
+          
+          // Determine UI highlights based on question
+          let highlights: string[] = [];
+          
+          if (lowerQuestion.includes('sbl')) highlights.push('SBLTrend', 'SBLStations');
+          if (lowerQuestion.includes('ptl')) highlights.push('PTLTrend', 'PTLTotals');
+          if (lowerQuestion.includes('trip') || lowerQuestion.includes('loading')) highlights.push('TripsGrid');
+          if (lowerQuestion.includes('otif') || lowerQuestion.includes('overall')) highlights.push('WaveSummary');
+          
+          return {
+            reasoning: 'Analytics-based fact-driven response using dashboard artifacts',
+            intent: 'analytics_based',
+            parameters: {},
+            answer: factBasedAnswer,
+            uiPatch: { highlight: highlights }
+          };
+        } else {
+          console.log('[ORCHESTRATOR] No artifacts or overall_summary found');
+        }
       } else {
-        console.log('[ORCHESTRATOR] No artifacts or overall_summary found');
+        console.log('[ORCHESTRATOR] No macros found');
       }
     } else {
-      console.log('[ORCHESTRATOR] Dashboard API not available:', response.status);
+      // Client side - make API call
+      const response = await fetch('/api/analytics/dashboard');
+      
+      if (response.ok) {
+        const data = await response.json();
+        const artifacts = data.data;
+        
+        if (artifacts && artifacts.overall_summary) {
+          console.log('[ORCHESTRATOR] Artifacts found, creating recommendation engine...');
+          const recommendationEngine = new RecommendationEngine();
+          const factBasedAnswer = recommendationEngine.generateFactBasedAnswer(question, artifacts);
+          
+          console.log('[ORCHESTRATOR] Generated answer:', factBasedAnswer);
+          
+          // Determine UI highlights based on question
+          let highlights: string[] = [];
+          
+          if (lowerQuestion.includes('sbl')) highlights.push('SBLTrend', 'SBLStations');
+          if (lowerQuestion.includes('ptl')) highlights.push('PTLTrend', 'PTLTotals');
+          if (lowerQuestion.includes('trip') || lowerQuestion.includes('loading')) highlights.push('TripsGrid');
+          if (lowerQuestion.includes('otif') || lowerQuestion.includes('overall')) highlights.push('WaveSummary');
+          
+          return {
+            reasoning: 'Analytics-based fact-driven response using dashboard artifacts',
+            intent: 'analytics_based',
+            parameters: {},
+            answer: factBasedAnswer,
+            uiPatch: { highlight: highlights }
+          };
+        } else {
+          console.log('[ORCHESTRATOR] No artifacts or overall_summary found');
+        }
+      } else {
+        console.log('[ORCHESTRATOR] Dashboard API not available:', response.status);
+      }
     }
   } catch (error) {
     console.log('[ORCHESTRATOR] Analytics not available, falling back to LLM:', error);
