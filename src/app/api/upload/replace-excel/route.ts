@@ -88,19 +88,33 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get data directory
-    const dataDir = process.env.DATA_DIR || join(process.cwd(), 'data');
+    // Get data directory - use /tmp for Vercel compatibility
+    const dataDir = process.env.NODE_ENV === 'production' 
+      ? '/tmp/data' 
+      : (process.env.DATA_DIR || join(process.cwd(), 'data'));
+    console.log('Data directory:', dataDir);
+    
+    // Ensure directory exists
+    try {
+      await import('fs').then(fs => fs.promises.mkdir(dataDir, { recursive: true }));
+    } catch (error) {
+      console.warn('Could not create data directory:', error);
+    }
     
     // Clear existing Excel files
     try {
       const existingFiles = await readdir(dataDir);
       const excelFiles = existingFiles.filter(f => f.endsWith('.xlsx'));
+      console.log('Found existing Excel files:', excelFiles);
       
       for (const file of excelFiles) {
-        await unlink(join(dataDir, file));
+        const filePath = join(dataDir, file);
+        console.log('Deleting file:', filePath);
+        await unlink(filePath);
       }
     } catch (error) {
       console.warn('Could not clear existing files:', error);
+      // Continue anyway - this is not critical
     }
 
     // Save new files
@@ -152,9 +166,15 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error replacing Excel files:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    });
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to replace Excel files' 
+      error: `Failed to replace Excel files: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      details: process.env.NODE_ENV === 'development' ? error : undefined
     }, { status: 500 });
   }
 }
