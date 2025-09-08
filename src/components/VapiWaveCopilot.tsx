@@ -501,10 +501,12 @@ export default function VapiWaveCopilotDual() {
 
   // Fetch real data on component mount
   useEffect(() => {
+    console.log('useEffect triggered - component mounted');
     const loadData = async () => {
       console.log('Loading data on component mount...');
       setIsDataLoading(true);
       try {
+        console.log('About to make API calls...');
         const [artifacts, recs, sblTimeline, ptlTimeline] = await Promise.all([
           fetchDashboardArtifacts(),
           fetchRecommendations(),

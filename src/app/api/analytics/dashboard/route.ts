@@ -15,6 +15,55 @@ export async function GET() {
     console.log('[DASHBOARD API] VERCEL env:', process.env.VERCEL);
     console.log('[DASHBOARD API] NODE_ENV:', process.env.NODE_ENV);
     
+    // On Vercel, copy Excel files from repository to /tmp/data if they don't exist
+    if (process.env.VERCEL === '1') {
+      try {
+        const fs = await import('fs');
+        const tmpDataDir = '/tmp/data';
+        const repoDataDir = join(process.cwd(), 'data');
+        
+        // Check if /tmp/data exists and has Excel files
+        const tmpDataExists = fs.existsSync(tmpDataDir);
+        const tmpDataFiles = tmpDataExists ? fs.readdirSync(tmpDataDir).filter(f => f.endsWith('.xlsx')) : [];
+        
+        console.log('[DASHBOARD API] /tmp/data exists:', tmpDataExists);
+        console.log('[DASHBOARD API] Excel files in /tmp/data:', tmpDataFiles.length);
+        
+        // If no Excel files in /tmp/data, copy from repository
+        if (tmpDataFiles.length === 0) {
+          console.log('[DASHBOARD API] Copying Excel files from repository to /tmp/data...');
+          
+          // Ensure /tmp/data exists
+          fs.mkdirSync(tmpDataDir, { recursive: true });
+          
+          // Copy Excel files from repository
+          const repoFiles = fs.readdirSync(repoDataDir).filter(f => f.endsWith('.xlsx'));
+          console.log('[DASHBOARD API] Found Excel files in repo:', repoFiles);
+          
+          for (const file of repoFiles) {
+            const srcPath = join(repoDataDir, file);
+            const destPath = join(tmpDataDir, file);
+            fs.copyFileSync(srcPath, destPath);
+            console.log('[DASHBOARD API] Copied:', file);
+          }
+          
+          // Now regenerate artifacts
+          console.log('[DASHBOARD API] Regenerating artifacts...');
+          const { ArtifactGenerator } = await import('@/lib/analytics/artifact-generator');
+          const { getProcessedMacros } = await import('@/server/datasource/macros-adapter');
+          
+          const macros = await getProcessedMacros();
+          if (macros) {
+            const generator = new ArtifactGenerator();
+            await generator.generateDashboardArtifacts(macros);
+            console.log('[DASHBOARD API] Artifacts regenerated successfully');
+          }
+        }
+      } catch (e) {
+        console.log('[DASHBOARD API] Error copying files:', e);
+      }
+    }
+    
     // Check if directory exists
     try {
       const fs = await import('fs');
