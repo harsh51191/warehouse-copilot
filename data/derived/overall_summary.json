@@ -1,9 +1,9 @@
 {
-  "projected_finish_iso": "2025-09-08T02:52:23.499Z",
-  "buffer_minutes": -2032,
-  "otif_risk": "HIGH",
-  "line_coverage_pct": 0.71,
-  "wave_status": "LATE",
-  "sbl_coverage_pct": 1.704,
-  "ptl_coverage_pct": 0
+  "projected_finish_iso": "2025-09-08T07:26:11.781Z",
+  "buffer_minutes": 590,
+  "otif_risk": "LOW",
+  "line_coverage_pct": 1,
+  "wave_status": "ON_TRACK",
+  "sbl_coverage_pct": 0.9825856302617921,
+  "ptl_coverage_pct": 0.9944370860927152
 }

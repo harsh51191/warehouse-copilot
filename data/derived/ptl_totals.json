@@ -1,8 +1,117 @@
 {
-  "last_hour_lines": 0,
-  "by_station": [],
+  "total_lines": 7508,
+  "last_hour_lines": 207,
+  "by_station": [
+    {
+      "station_code": "V002",
+      "lines_last_hour": 34,
+      "productivity": 81.5
+    },
+    {
+      "station_code": "V010",
+      "lines_last_hour": 29,
+      "productivity": 55.6
+    },
+    {
+      "station_code": "V001",
+      "lines_last_hour": 23,
+      "productivity": 55
+    },
+    {
+      "station_code": "V003",
+      "lines_last_hour": 21,
+      "productivity": 101
+    },
+    {
+      "station_code": "V011",
+      "lines_last_hour": 17,
+      "productivity": 41
+    },
+    {
+      "station_code": "V007",
+      "lines_last_hour": 15,
+      "productivity": 72
+    },
+    {
+      "station_code": "V015",
+      "lines_last_hour": 12,
+      "productivity": 58
+    },
+    {
+      "station_code": "V006",
+      "lines_last_hour": 11,
+      "productivity": 35.333333333333336
+    },
+    {
+      "station_code": "V005",
+      "lines_last_hour": 11,
+      "productivity": 52.5
+    },
+    {
+      "station_code": "V012",
+      "lines_last_hour": 10,
+      "productivity": 48
+    },
+    {
+      "station_code": "V008",
+      "lines_last_hour": 7,
+      "productivity": 22.666666666666668
+    },
+    {
+      "station_code": "V004",
+      "lines_last_hour": 7,
+      "productivity": 33.5
+    },
+    {
+      "station_code": "V009",
+      "lines_last_hour": 5,
+      "productivity": 16.333333333333332
+    },
+    {
+      "station_code": "V013",
+      "lines_last_hour": 3,
+      "productivity": 29
+    },
+    {
+      "station_code": "V016",
+      "lines_last_hour": 2,
+      "productivity": 10
+    }
+  ],
   "leaderboard": {
-    "top": [],
-    "bottom": []
+    "top": [
+      {
+        "station_code": "V002",
+        "lines_last_hour": 34,
+        "productivity": 81.5
+      },
+      {
+        "station_code": "V010",
+        "lines_last_hour": 29,
+        "productivity": 55.6
+      },
+      {
+        "station_code": "V001",
+        "lines_last_hour": 23,
+        "productivity": 55
+      }
+    ],
+    "bottom": [
+      {
+        "station_code": "V009",
+        "lines_last_hour": 5,
+        "productivity": 16.333333333333332
+      },
+      {
+        "station_code": "V013",
+        "lines_last_hour": 3,
+        "productivity": 29
+      },
+      {
+        "station_code": "V016",
+        "lines_last_hour": 2,
+        "productivity": 10
+      }
+    ]
   }
 }

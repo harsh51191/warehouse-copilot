@@ -1,6 +1,10 @@
 [
   {
     "mm_trip": "TR619119640474865664",
+    "total": 876,
+    "sorted": 876,
+    "staged": 876,
+    "loaded": 876,
     "sorted_pct": 1,
     "staged_pct": 1,
     "loaded_pct": 1,
@@ -17,6 +21,10 @@
   },
   {
     "mm_trip": "TR619119640474865665",
+    "total": 439,
+    "sorted": 438,
+    "staged": 438,
+    "loaded": 438,
     "sorted_pct": 1,
     "staged_pct": 1,
     "loaded_pct": 1,
@@ -33,6 +41,10 @@
   },
   {
     "mm_trip": "TR619119682763354112",
+    "total": 557,
+    "sorted": 556,
+    "staged": 556,
+    "loaded": 556,
     "sorted_pct": 1,
     "staged_pct": 1,
     "loaded_pct": 1,
@@ -49,6 +61,10 @@
   },
   {
     "mm_trip": "TR619119692393476096",
+    "total": 555,
+    "sorted": 555,
+    "staged": 555,
+    "loaded": 555,
     "sorted_pct": 1,
     "staged_pct": 1,
     "loaded_pct": 1,
@@ -65,6 +81,10 @@
   },
   {
     "mm_trip": "TR619119692393476097",
+    "total": 302,
+    "sorted": 301,
+    "staged": 301,
+    "loaded": 301,
     "sorted_pct": 1,
     "staged_pct": 1,
     "loaded_pct": 1,

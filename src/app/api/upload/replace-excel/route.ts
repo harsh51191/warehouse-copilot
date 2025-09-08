@@ -50,12 +50,15 @@ export async function POST(request: NextRequest) {
         });
         
         if (validation.isValid) {
-          fileContents.push({
-            filename: file.name,
-            content,
-            buffer,
-            detectedType: validation.detectedType
-          });
+          // Only process non-ignored files
+          if (validation.detectedType !== 'ignored') {
+            fileContents.push({
+              filename: file.name,
+              content,
+              buffer,
+              detectedType: validation.detectedType
+            });
+          }
         }
       } catch (error) {
         console.error(`Error processing file ${file.name}:`, error);

@@ -1,8 +1,8 @@
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
-import { DashboardArtifacts, OverallSummary, SBLStation, SBLStream, PTLStream, PTLTotals, TripRisk, getHealthColor, getOTIFRisk, calculateSimpleMovingAverage, calculateSlope } from './dashboard-artifacts';
+import { DashboardArtifacts, OverallSummary, SBLStation, SBLStream, PTLStream, PTLTotals, TripRisk, SBLInfeedData, SBLInfeedSKU, SBLInfeedHU, getHealthColor, getOTIFRisk, calculateSimpleMovingAverage, calculateSlope } from './dashboard-artifacts';
 import { ProcessedMacros } from './macros-processor';
-import { getLoadingStatusFromFile, getSBLTimelineFromFile, getPTLTimelineFromFile, getStationCompletionFromFile, getSBLSummaryFromFile, getSBLTableLinesFromFile, getPTLTableLinesFromFile, getSecondarySortationFromFile, getSBLSKUsFromFile } from '../../server/datasource/file-adapter';
+import { getLoadingStatusFromFile, getSBLTimelineFromFile, getPTLTimelineFromFile, getStationCompletionFromFile, getSBLTableLinesFromFile, getPTLTableLinesFromFile, getSecondarySortationFromFile, getSBLSKUsFromFile, getSBLInfeedFromFile } from '../../server/datasource/file-adapter';
 import { STAGE_TARGETS, THRESHOLDS } from '../config/stage-targets';
 
 export class ArtifactGenerator {
@@ -25,12 +25,11 @@ export class ArtifactGenerator {
       await mkdir(this.derivedDir, { recursive: true });
 
       // Load all data sources (handle missing files gracefully)
-    const [loadingData, sblTimeline, ptlTimeline, stationCompletion, sblSummary, sblTableLines, ptlTableLines, secondarySortation, sblSKUs] = await Promise.all([
+    const [loadingData, sblTimeline, ptlTimeline, stationCompletion, sblTableLines, ptlTableLines, secondarySortation, sblSKUs] = await Promise.all([
       getLoadingStatusFromFile().catch(() => ({ byTrip: [], summary: { totalAssigned: 0, totalLoaded: 0 } })),
       getSBLTimelineFromFile().catch(() => ({ timeline: [], summary: { totalLines: 0, averageProductivity: 0 } })),
       getPTLTimelineFromFile().catch(() => ({ timeline: [], summary: { totalLines: 0, averageProductivity: 0 } })),
       getStationCompletionFromFile().catch(() => ({ stations: [], summary: { totalDemandLines: 0, totalPackedLines: 0 } })),
-      getSBLSummaryFromFile().catch(() => ({ stations: [], summary: { totalStations: 0, averageProductivity: 0, lastTenMinProductivity: 0 } })),
       getSBLTableLinesFromFile().catch(() => ({ intervals: [], summary: { totalIntervals: 0, totalLines: 0, averageLinesPerInterval: 0 } })),
       getPTLTableLinesFromFile().catch(() => ({ intervals: [], summary: { totalIntervals: 0, totalLines: 0, averageLinesPerInterval: 0 } })),
       getSecondarySortationFromFile().catch(() => ({ records: [], summary: { totalRecords: 0, totalCrates: 0, totalQC: 0 } })),
@@ -42,19 +41,37 @@ export class ArtifactGenerator {
         sblIntervals: sblTimeline.timeline.length,
         ptlIntervals: ptlTimeline.timeline.length,
         stations: stationCompletion.stations.length,
-        sblSummaryStations: sblSummary.stations.length,
         sblTableLinesIntervals: sblTableLines.intervals.length,
         ptlTableLinesIntervals: ptlTableLines.intervals.length,
         secondarySortationRecords: secondarySortation.records.length
       }, null);
 
       // Generate each artifact
-      const overallSummary = await this.generateOverallSummary(macros, loadingData, sblTimeline, ptlTimeline, sblTableLines, ptlTableLines);
-      const sblStations = await this.generateSBLStations(stationCompletion, sblSummary, sblTableLines);
-      const sblStream = await this.generateSBLStream(sblTimeline, sblSummary);
+      const overallSummary = await this.generateOverallSummary(macros, loadingData, sblTimeline, ptlTimeline, stationCompletion, sblTableLines, ptlTableLines);
+      const sblStations = await this.generateSBLStations(stationCompletion, sblTableLines);
+      
+      // Calculate SBL coverage from actual SBL stations data
+      const sblTotalPacked = sblStations.reduce((sum, station) => sum + station.packed, 0);
+      const sblTotalDemand = sblStations.reduce((sum, station) => sum + station.total, 0);
+      const sblCoverage = (macros.waveInfo.split_lines_sbl || 0) > 0 ? 
+        Math.min(1, sblTotalPacked / (macros.waveInfo.split_lines_sbl || 1)) : 0;
+      
+      // Update overall summary with correct SBL coverage
+      overallSummary.sbl_coverage_pct = sblCoverage;
+      const sblStream = await this.generateSBLStream(sblTimeline);
       const ptlStream = await this.generatePTLStream(ptlTimeline);
       const ptlTotals = await this.generatePTLTotals(ptlTableLines);
       const trips = await this.generateTripRisks(loadingData, secondarySortation);
+      console.log('[DEBUG] Generating SBL infeed data...');
+      let sblInfeed = null;
+      try {
+        console.log('[DEBUG] About to call generateSBLInfeedData');
+        sblInfeed = await generateSBLInfeedData();
+        console.log('[DEBUG] SBL infeed result:', sblInfeed ? `Data found - ${sblInfeed.skus?.length || 0} SKUs, ${sblInfeed.hus?.length || 0} HUs` : 'No data');
+      } catch (error) {
+        console.error('[DEBUG] SBL infeed error:', error instanceof Error ? error.message : String(error));
+        console.error('[DEBUG] SBL infeed stack:', error instanceof Error ? error.stack : 'No stack trace');
+      }
 
       const artifacts: DashboardArtifacts = {
         overall_summary: overallSummary,
@@ -64,6 +81,7 @@ export class ArtifactGenerator {
         ptl_totals: ptlTotals,
         trips: trips,
         sbl_skus: sblSKUs,
+        sbl_infeed: sblInfeed,
         calculation_timestamp: new Date().toISOString(),
         macros: macros
       };
@@ -80,24 +98,28 @@ export class ArtifactGenerator {
     }
   }
 
-  private async generateOverallSummary(macros: ProcessedMacros, loadingData: any, sblTimeline: any, ptlTimeline: any, sblTableLines: any, ptlTableLines: any): Promise<OverallSummary> {
+  private async generateOverallSummary(macros: ProcessedMacros, loadingData: any, sblTimeline: any, ptlTimeline: any, stationCompletion: any, sblTableLines: any, ptlTableLines: any): Promise<OverallSummary> {
     const now = new Date();
     const cutoffTime = macros.cutoffTime;
     
-    // Calculate projected finish based on current progress
-    const totalAssigned = loadingData.summary.totalAssigned;
-    const totalLoaded = loadingData.summary.totalLoaded;
-    const progress = totalAssigned > 0 ? totalLoaded / totalAssigned : 0;
+    // Calculate projected finish based on overall wave progress (SBL + PTL lines)
+    const totalOrderLines = macros.waveInfo.total_order_lines || 0;
+    const sblCompleted = sblTimeline.summary.totalLines || 0;
+    const ptlCompleted = ptlTimeline.summary.totalLines || 0;
+    const totalCompleted = sblCompleted + ptlCompleted;
+    const progress = totalOrderLines > 0 ? totalCompleted / totalOrderLines : 0;
     
     let projectedFinish: Date;
     let bufferMinutes: number;
     
-    if (progress > 0) {
+    if (progress > 0 && progress < 1) {
       // Simple projection: if we're X% done, we'll finish in (1-X) * remaining time
-      const remainingProgress = 1 - progress;
       const timeElapsed = (now.getTime() - macros.startTime.getTime()) / (1000 * 60 * 60); // hours
       const projectedTotalTime = timeElapsed / progress;
       projectedFinish = new Date(macros.startTime.getTime() + projectedTotalTime * 60 * 60 * 1000);
+    } else if (progress >= 1) {
+      // Already completed or over-completed
+      projectedFinish = now;
     } else {
       // No progress data - use expected duration from macros
       const expectedDurationMs = macros.expectedDuration.total * 60 * 60 * 1000; // hours to ms
@@ -107,18 +129,22 @@ export class ArtifactGenerator {
     bufferMinutes = (cutoffTime.getTime() - projectedFinish.getTime()) / (1000 * 60);
     const otifRisk = getOTIFRisk(bufferMinutes);
     
-    // Calculate SBL and PTL coverage from table lines data
+    // Calculate SBL and PTL coverage from actual completion data
     let sblCoverage = 0;
     let ptlCoverage = 0;
     
-    if (sblTableLines.intervals && sblTableLines.intervals.length > 0) {
-      const sblTotalLines = sblTableLines.intervals.reduce((sum: number, interval: any) => sum + (interval.line_count || 0), 0);
-      sblCoverage = (macros.waveInfo.split_lines_sbl || 0) > 0 ? sblTotalLines / (macros.waveInfo.split_lines_sbl || 1) : 0;
+    // SBL coverage will be calculated after SBL stations are generated
+    // For now, use station completion data as fallback
+    if (stationCompletion.summary.totalPackedLines > 0) {
+      sblCoverage = (macros.waveInfo.split_lines_sbl || 0) > 0 ? 
+        Math.min(1, stationCompletion.summary.totalPackedLines / (macros.waveInfo.split_lines_sbl || 1)) : 0;
     }
     
+    // PTL coverage based on actual completion from PTL table lines vs planned lines
     if (ptlTableLines.intervals && ptlTableLines.intervals.length > 0) {
       const ptlTotalLines = ptlTableLines.intervals.reduce((sum: number, interval: any) => sum + (interval.line_count || 0), 0);
-      ptlCoverage = (macros.waveInfo.split_lines_ptl || 0) > 0 ? ptlTotalLines / (macros.waveInfo.split_lines_ptl || 1) : 0;
+      ptlCoverage = (macros.waveInfo.split_lines_ptl || 0) > 0 ? 
+        Math.min(1, ptlTotalLines / (macros.waveInfo.split_lines_ptl || 1)) : 0;
     }
     
     // Calculate overall line coverage
@@ -138,13 +164,13 @@ export class ArtifactGenerator {
     };
 
     this.logger.logCalculation('overall_summary', { 
-      totalAssigned, totalLoaded, progress, timeElapsed: (now.getTime() - macros.startTime.getTime()) / (1000 * 60 * 60)
+      totalOrderLines, totalCompleted, sblCompleted, ptlCompleted, progress, timeElapsed: (now.getTime() - macros.startTime.getTime()) / (1000 * 60 * 60)
     }, summary);
 
     return summary;
   }
 
-  private async generateSBLStations(stationCompletion: any, sblSummary: any, sblTableLines: any): Promise<SBLStation[]> {
+  private async generateSBLStations(stationCompletion: any, sblTableLines: any): Promise<SBLStation[]> {
     const stations: SBLStation[] = [];
     const targetLPH = STAGE_TARGETS.SBL.target_lph;
     const starvationLmin = THRESHOLDS.starvation_Lmin_lines;
@@ -199,7 +225,7 @@ export class ArtifactGenerator {
 
     for (const station of stationCompletion.stations) {
       const remaining = station.totalDemandLines - station.totalPackedLines;
-      const completionPct = station.completionPercentage / 100;
+      const completionPct = station.completionPercentage / 100; // Convert percentage to decimal (98.5 -> 0.985)
       
       // Get productivity data from sbl_table_lines
       const productivityData = productivityMap.get(station.code) || { totalProductivity: 0, intervalCount: 0 };
@@ -230,7 +256,12 @@ export class ArtifactGenerator {
         recent_infeed_lph: recentInfeedLPH,
         is_productivity_issue: isProductivityIssue,
         is_infeed_issue: isInfeedIssue,
-        issue_type: isInfeedIssue ? 'infeed' : isProductivityIssue ? 'productivity' : 'none'
+        issue_type: isInfeedIssue ? 'infeed' : isProductivityIssue ? 'productivity' : 'none',
+        // Value completion data
+        total_value: station.totalValue || 0,
+        completed_value: station.completedValue || 0,
+        pending_value: station.pendingValue || 0,
+        value_completion_pct: (station.valueCompletionPercentage || 0) / 100
       });
     }
 
@@ -238,7 +269,7 @@ export class ArtifactGenerator {
     return stations;
   }
 
-  private async generateSBLStream(sblTimeline: any, sblSummary: any): Promise<SBLStream> {
+  private async generateSBLStream(sblTimeline: any): Promise<SBLStream> {
     const productivities = sblTimeline.timeline && sblTimeline.timeline.length > 0 
       ? sblTimeline.timeline.map((t: any) => t.productivity) 
       : [];
@@ -296,20 +327,27 @@ export class ArtifactGenerator {
     const uniqueIntervals = [...new Set(ptlTableLines.intervals.map((i: any) => i.interval_no))].sort((a: any, b: any) => b - a);
     const last6Intervals = uniqueIntervals.slice(0, 6);
     
-    // Calculate last hour totals from PTL table lines
+    // Calculate total lines and last hour totals from PTL table lines
+    let totalLines = 0;
     let lastHourLines = 0;
     const stationMap = new Map();
     
     for (const interval of ptlTableLines.intervals) {
+      const station = interval.station_code;
+      const lineCount = interval.line_count || 0;
+      
+      // Add to total lines (all intervals)
+      totalLines += lineCount;
+      
+      // Add to last hour lines (only last 6 intervals)
       if (last6Intervals.includes(interval.interval_no)) {
-        const station = interval.station_code;
-        lastHourLines += interval.line_count || 0;
+        lastHourLines += lineCount;
         
         if (!stationMap.has(station)) {
           stationMap.set(station, { lines: 0, productivity: 0, count: 0 });
         }
         const current = stationMap.get(station);
-        current.lines += interval.line_count || 0;
+        current.lines += lineCount;
         current.productivity += interval.productivity || 0;
         current.count += 1;
       }
@@ -327,12 +365,13 @@ export class ArtifactGenerator {
     };
     
     const totals: PTLTotals = {
+      total_lines: totalLines,
       last_hour_lines: lastHourLines,
       by_station: byStation,
       leaderboard: leaderboard
     };
 
-    this.logger.logCalculation('ptl_totals', { lastHourLines, stationCount: byStation.length }, totals);
+    this.logger.logCalculation('ptl_totals', { totalLines, lastHourLines, stationCount: byStation.length }, totals);
     return totals;
   }
 
@@ -373,6 +412,10 @@ export class ArtifactGenerator {
 
       trips.push({
         mm_trip: trip.trip,
+        total: trip.total || 0,
+        sorted: trip.sorted || 0,
+        staged: trip.staged || 0,
+        loaded: trip.loaded || 0,
         sorted_pct: Math.round(sortedPct * 100) / 100,
         staged_pct: Math.round(stagedPct * 100) / 100,
         loaded_pct: Math.round(loadedPct * 100) / 100,
@@ -450,3 +493,154 @@ export class AnalyticsLogger {
     }
   }
 }
+
+export async function generateSBLInfeedData(): Promise<SBLInfeedData | null> {
+    console.log('[DEBUG] generateSBLInfeedData called');
+    try {
+      const { skus: rawSkus, hus: rawHus } = await getSBLInfeedFromFile();
+      
+      if (rawSkus.length === 0 || rawHus.length === 0) {
+        return null;
+      }
+
+      // Aggregate SKUs by sku_code
+      const skuMap = new Map<string, SBLInfeedSKU>();
+      
+      for (const rawSku of rawSkus) {
+        const skuCode = rawSku.sku_code;
+        if (!skuMap.has(skuCode)) {
+          skuMap.set(skuCode, {
+            sku_code: skuCode,
+            batch: rawSku.batch,
+            pending_qty: rawSku.pending_qty,
+            pending_lines: rawSku.pending_lines,
+            hu_available_count: 0,
+            available_qty: 0,
+            coverage_pct: 0,
+            blocked_hu_count: 0,
+            stale_hu_count: 0,
+            top_bins: [],
+            top_hus: [],
+            value_pending: rawSku.value_pending,
+            dq_flags: {
+              sku_mismatch_on_hu: false,
+              inactive_bins: false,
+              blocked_but_needed: false
+            }
+          });
+        }
+      }
+
+      // Process HUs and aggregate by SKU
+      const processedHUs: SBLInfeedHU[] = [];
+      const INFEED_STALE_MINUTES = 30;
+      
+      for (const rawHu of rawHus) {
+        const hu: SBLInfeedHU = {
+          hu_code: rawHu.hu_code,
+          sku_code: rawHu.sku_code,
+          qty: rawHu.qty,
+          bin_code: rawHu.bin_code,
+          feed_status: rawHu.feed_status,
+          blocked_status: rawHu.blocked_status,
+          inclusionStatus: rawHu.inclusionStatus,
+          updatedAt: rawHu.updatedAt,
+          age_minutes: rawHu.age_minutes,
+          bin_status: rawHu.bin_status
+        };
+        
+        processedHUs.push(hu);
+        
+        // Update SKU aggregates
+        const sku = skuMap.get(rawHu.sku_code);
+        if (sku) {
+          // Check if HU is available for feeding
+          const isAvailable = hu.feed_status === 'NOT_FED' && 
+                             hu.inclusionStatus === 'INCLUDED' && 
+                             !hu.blocked_status && 
+                             hu.bin_status === 'ACTIVE';
+          
+          if (isAvailable) {
+            sku.hu_available_count++;
+            sku.available_qty += hu.qty;
+            
+            // Add to top HUs (limit to 3)
+            if (sku.top_hus.length < 3) {
+              sku.top_hus.push({
+                hu_code: hu.hu_code,
+                qty: hu.qty,
+                bin_code: hu.bin_code
+              });
+            }
+          }
+          
+          // Count blocked HUs
+          if (hu.blocked_status) {
+            sku.blocked_hu_count++;
+          }
+          
+          // Count stale HUs
+          if (hu.age_minutes > INFEED_STALE_MINUTES) {
+            sku.stale_hu_count++;
+          }
+          
+          // Track top bins
+          if (!sku.top_bins.includes(hu.bin_code)) {
+            sku.top_bins.push(hu.bin_code);
+          }
+          
+          // DQ flags
+          if (rawHu.sku_code_1 && rawHu.sku_code_1 !== rawHu.sku_code) {
+            sku.dq_flags.sku_mismatch_on_hu = true;
+          }
+          if (hu.bin_status !== 'ACTIVE') {
+            sku.dq_flags.inactive_bins = true;
+          }
+          if (hu.blocked_status && sku.pending_qty > 0) {
+            sku.dq_flags.blocked_but_needed = true;
+          }
+        }
+      }
+      
+      // Calculate coverage percentages and finalize SKUs
+      const finalSkus: SBLInfeedSKU[] = [];
+      for (const sku of skuMap.values()) {
+        sku.coverage_pct = sku.pending_qty > 0 ? 
+          Math.min(sku.available_qty, sku.pending_qty) / sku.pending_qty * 100 : 0;
+        
+        // Limit top_bins to 3
+        sku.top_bins = sku.top_bins.slice(0, 3);
+        
+        finalSkus.push(sku);
+      }
+      
+      // Sort SKUs by coverage percentage (lowest first)
+      finalSkus.sort((a, b) => a.coverage_pct - b.coverage_pct);
+      
+      // Calculate summary
+      const totalSkus = finalSkus.length;
+      const totalHus = processedHUs.length;
+      const avgCoveragePct = totalSkus > 0 ? 
+        finalSkus.reduce((sum, s) => sum + s.coverage_pct, 0) / totalSkus : 0;
+      const lowCoverageSkus = finalSkus.filter(s => s.coverage_pct < 50).length;
+      const blockedHus = processedHUs.filter(h => h.blocked_status).length;
+      const staleHus = processedHUs.filter(h => h.age_minutes > INFEED_STALE_MINUTES).length;
+      
+      return {
+        skus: finalSkus,
+        hus: processedHUs,
+        summary: {
+          total_skus: totalSkus,
+          total_hus: totalHus,
+          avg_coverage_pct: Math.round(avgCoveragePct * 100) / 100,
+          low_coverage_skus: lowCoverageSkus,
+          blocked_hus: blockedHus,
+          stale_hus: staleHus
+        }
+      };
+      
+    } catch (error) {
+      console.error('Error generating SBL infeed data:', error);
+      return null;
+    }
+  }

@@ -99,21 +99,13 @@ export const EXCEL_SCHEMAS: Record<string, ExcelValidationSchema> = {
     optionalColumns: [],
     description: 'Station Wise SBL Productivity per hour over every 10 minutes interval'
   },
-  'sbl_summary': {
-    filename: 'sbl_summary',
-    requiredColumns: [
-      'metric', 'station_count'
-    ],
-    optionalColumns: [],
-    description: 'SBL Summary Query'
-  },
   'sbl_table_lines': {
     filename: 'sbl_table_lines',
     requiredColumns: [
       'interval_no', 'zone_code', 'total_line_count', 'productivity'
     ],
     optionalColumns: [],
-    description: 'SBL Table Lines Query'
+    description: 'SBL station-wise picks done in 10-minute intervals with productivity'
   },
   'secondary_sortation': {
     filename: 'secondary_sortation',
@@ -126,6 +118,19 @@ export const EXCEL_SCHEMAS: Record<string, ExcelValidationSchema> = {
     ],
     optionalColumns: [],
     description: 'Secondary Sortation Query'
+  },
+  'partial_hus_pending_based_on_gtp_demand': {
+    filename: 'partial_hus_pending_based_on_gtp_demand',
+    requiredColumns: [
+      'sku_code', 'demand_qty', 'packed_qty', 'pending_qty', 'total_demand_lines', 
+      'demand_packed_lines', 'pending_lines', 'hu_code', 'bin_code', 'qty', 
+      'feed_status', 'updatedAt'
+    ],
+    optionalColumns: [
+      'batch', 'value_pending', 'sku_code.1', 'uom', 'bucket', 'batch.1', 
+      'bin_status', 'inclusionStatus', 'blocked_status', 'timestamp'
+    ],
+    description: 'Partial HUs Pending Based on GTP Demand - SKU coverage and HU availability'
   }
 };
 
@@ -164,6 +169,16 @@ export function validateExcelFile(file: File, content: any[]): ValidationResult 
     };
   }
 
+  // Handle ignored file types
+  if (detectedType === 'ignored') {
+    return {
+      isValid: true,
+      errors: [],
+      warnings: [`File ${file.name} is ignored and will not be processed`],
+      detectedType: 'ignored'
+    };
+  }
+
   const schema = EXCEL_SCHEMAS[detectedType];
   
   // Check required columns
@@ -191,6 +206,11 @@ export function validateExcelFile(file: File, content: any[]): ValidationResult 
 function detectFileType(filename: string): string | null {
   const lowerName = filename.toLowerCase();
   
+  // Ignore these file types completely
+  if (lowerName.includes('ptl_summary') || lowerName.includes('sbl_summary')) {
+    return 'ignored';
+  }
+  
   // Check for exact matches first
   for (const [key, schema] of Object.entries(EXCEL_SCHEMAS)) {
     if (lowerName.includes(schema.filename)) {
@@ -214,8 +234,8 @@ function detectFileType(filename: string): string | null {
   if (lowerName.includes('sbl_productivity') && !lowerName.includes('table') && !lowerName.includes('station')) return 'sbl_productivity';
   if (lowerName.includes('sbl_table') && lowerName.includes('lines')) return 'sbl_table_lines';
   if (lowerName.includes('station') && lowerName.includes('wise') && lowerName.includes('sbl')) return 'station_wise_sbl_productivity';
-  if (lowerName.includes('sbl_summary')) return 'sbl_summary';
   if (lowerName.includes('secondary_sortation')) return 'secondary_sortation';
+  if (lowerName.includes('partial_hus_pending_based_on_gtp_demand') || lowerName.includes('partial_hus_pending') || lowerName.includes('infeed')) return 'partial_hus_pending_based_on_gtp_demand';
   
   return null;
 }

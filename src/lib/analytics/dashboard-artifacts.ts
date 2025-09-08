@@ -29,6 +29,11 @@ export interface SBLStation {
   is_productivity_issue?: boolean;
   is_infeed_issue?: boolean;
   issue_type?: 'infeed' | 'productivity' | 'none';
+  // Value completion data
+  total_value?: number;
+  completed_value?: number;
+  pending_value?: number;
+  value_completion_pct?: number;
 }
 
 export interface SBLStream {
@@ -50,6 +55,7 @@ export interface PTLStream {
 }
 
 export interface PTLTotals {
+  total_lines: number;
   last_hour_lines: number;
   by_station: Array<{
     station_code: string;
@@ -64,6 +70,10 @@ export interface PTLTotals {
 
 export interface TripRisk {
   mm_trip: string;
+  total: number;
+  sorted: number;
+  staged: number;
+  loaded: number;
   sorted_pct: number;
   staged_pct: number;
   loaded_pct: number;
@@ -79,6 +89,52 @@ export interface TripRisk {
   health_color: 'green' | 'amber' | 'red';
 }
 
+export interface SBLInfeedSKU {
+  sku_code: string;
+  batch?: string;
+  pending_qty: number;
+  pending_lines: number;
+  hu_available_count: number;
+  available_qty: number;
+  coverage_pct: number;
+  blocked_hu_count: number;
+  stale_hu_count: number;
+  top_bins: string[];
+  top_hus: Array<{ hu_code: string; qty: number; bin_code: string }>;
+  value_pending?: number;
+  dq_flags: {
+    sku_mismatch_on_hu: boolean;
+    inactive_bins: boolean;
+    blocked_but_needed: boolean;
+  };
+}
+
+export interface SBLInfeedHU {
+  hu_code: string;
+  sku_code: string;
+  qty: number;
+  bin_code: string;
+  feed_status: 'FED' | 'NOT_FED';
+  blocked_status: boolean;
+  inclusionStatus: 'INCLUDED' | 'EXCLUDED' | 'LOCKED' | 'BLOCKED';
+  updatedAt: string;
+  age_minutes: number;
+  bin_status: 'ACTIVE' | 'INACTIVE';
+}
+
+export interface SBLInfeedData {
+  skus: SBLInfeedSKU[];
+  hus: SBLInfeedHU[];
+  summary: {
+    total_skus: number;
+    total_hus: number;
+    avg_coverage_pct: number;
+    low_coverage_skus: number;
+    blocked_hus: number;
+    stale_hus: number;
+  };
+}
+
 export interface DashboardArtifacts {
   overall_summary: OverallSummary;
   sbl_stations: SBLStation[];
@@ -87,6 +143,7 @@ export interface DashboardArtifacts {
   ptl_totals: PTLTotals;
   trips: TripRisk[];
   sbl_skus: any;
+  sbl_infeed: SBLInfeedData | null;
   calculation_timestamp: string;
   macros: ProcessedMacros;
 }

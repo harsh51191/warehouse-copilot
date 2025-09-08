@@ -22,6 +22,32 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult[] | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string>('');
+
+  // Define expected files for complete analytics
+  const expectedFiles = [
+    { key: 'wave_macros', name: 'wave_macros (Wave parameters)', category: 'core' },
+    { key: 'line_completion_2', name: 'line_completion_2 (SBL completion)', category: 'core' },
+    { key: 'sbl_productivity', name: 'sbl_productivity (SBL trends)', category: 'core' },
+    { key: 'ptl_productivity', name: 'ptl_productivity (PTL trends)', category: 'core' },
+    { key: 'updated_loading_dashboard_query', name: 'updated_loading_dashboard_query (Trip data)', category: 'enhanced' },
+    { key: 'secondary_sortation', name: 'secondary_sortation (QC data)', category: 'enhanced' },
+    { key: 'ptl_table_lines', name: 'ptl_table_lines (Station data)', category: 'enhanced' },
+    { key: 'sbl_table_lines', name: 'sbl_table_lines (Station data)', category: 'enhanced' }
+  ];
+
+  // Check which files are present
+  const getFileCoverage = () => {
+    if (!uploadResult) return { present: [], missing: [], total: expectedFiles.length };
+    
+    const presentFiles = uploadResult
+      .filter(result => result.isValid && result.detectedType !== 'ignored')
+      .map(result => result.detectedType);
+    
+    const present = expectedFiles.filter(file => presentFiles.includes(file.key));
+    const missing = expectedFiles.filter(file => !presentFiles.includes(file.key));
+    
+    return { present, missing, total: expectedFiles.length };
+  };
   const [apiKey, setApiKey] = useState('');
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
 
@@ -361,53 +387,57 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
                     <Info size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
                     <div className="text-sm">
                       <p className="font-medium text-amber-800 mb-2">Expected Files for Complete Analytics:</p>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <p className="font-medium text-amber-700 mb-1">Core Files:</p>
-                          <ul className="space-y-1 text-amber-600">
-                            <li className="flex items-center gap-2">
-                              <span className="text-green-600">✓</span>
-                              <span>wave_macros (Wave parameters)</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <span className="text-green-600">✓</span>
-                              <span>line_completion_2 (SBL completion)</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <span className="text-green-600">✓</span>
-                              <span>sbl_productivity (SBL trends)</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <span className="text-green-600">✓</span>
-                              <span>ptl_productivity (PTL trends)</span>
-                            </li>
-                          </ul>
-                        </div>
-                        <div>
-                          <p className="font-medium text-amber-700 mb-1">Enhanced Analytics:</p>
-                          <ul className="space-y-1 text-amber-600">
-                            <li className="flex items-center gap-2">
-                              <span className="text-green-600">✓</span>
-                              <span>updated_loading_dashboard_query (Trip data)</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <span className="text-green-600">✓</span>
-                              <span>secondary_sortation (QC data)</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <span className="text-red-500">✗</span>
-                              <span>ptl_table_lines (Station data) - Missing</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <span className="text-green-600">✓</span>
-                              <span>sbl_summary (Station productivity)</span>
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                      <p className="text-amber-600 mt-2">
-                        <strong>Status:</strong> 7/8 files uploaded. Upload <code>ptl_table_lines.xlsx</code> for complete analytics!
-                      </p>
+                      {(() => {
+                        const coverage = getFileCoverage();
+                        const coreFiles = expectedFiles.filter(f => f.category === 'core');
+                        const enhancedFiles = expectedFiles.filter(f => f.category === 'enhanced');
+                        
+                        return (
+                          <>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <p className="font-medium text-amber-700 mb-1">Core Files:</p>
+                                <ul className="space-y-1 text-amber-600">
+                                  {coreFiles.map(file => {
+                                    const isPresent = coverage.present.some(p => p.key === file.key);
+                                    return (
+                                      <li key={file.key} className="flex items-center gap-2">
+                                        <span className={isPresent ? "text-green-600" : "text-red-500"}>
+                                          {isPresent ? "✓" : "✗"}
+                                        </span>
+                                        <span>{file.name}{!isPresent ? " - Missing" : ""}</span>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              </div>
+                              <div>
+                                <p className="font-medium text-amber-700 mb-1">Enhanced Analytics:</p>
+                                <ul className="space-y-1 text-amber-600">
+                                  {enhancedFiles.map(file => {
+                                    const isPresent = coverage.present.some(p => p.key === file.key);
+                                    return (
+                                      <li key={file.key} className="flex items-center gap-2">
+                                        <span className={isPresent ? "text-green-600" : "text-red-500"}>
+                                          {isPresent ? "✓" : "✗"}
+                                        </span>
+                                        <span>{file.name}{!isPresent ? " - Missing" : ""}</span>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              </div>
+                            </div>
+                            <p className="text-amber-600 mt-2">
+                              <strong>Status:</strong> {coverage.present.length}/{coverage.total} files uploaded. 
+                              {coverage.missing.length > 0 && (
+                                <> Upload {coverage.missing.map(f => f.name.split(' ')[0]).join(', ')} for complete analytics!</>
+                              )}
+                              {coverage.missing.length === 0 && " All files uploaded! Analytics complete."}
+                            </p>
+                          </>
+                        );
+                      })()}
                       <div className="mt-3 flex gap-2">
                         <button
                           onClick={() => {

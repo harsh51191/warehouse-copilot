@@ -79,7 +79,10 @@ function generateNaturalFallback(question: string, data: any, intent: string): s
 export async function POST(req: Request) {
 	try {
 		const { question } = await req.json();
+		console.log('[AI API] Processing question:', question);
+		
 		const analysis = await analyseQuery(String(question || ""));
+		console.log('[AI API] Analysis result:', analysis);
 
 		// If we have a valid intent, call the appropriate runner and generate dynamic answer
 		if (analysis.intent !== 'unknown') {
@@ -90,6 +93,8 @@ export async function POST(req: Request) {
 					
 					// Use AI to generate a natural answer based on the actual data
 					const dynamicAnswer = await generateDynamicAnswer(question, runnerResult.data, analysis.intent);
+					
+					console.log('[AI API] Generated dynamic answer:', dynamicAnswer);
 					
 					return NextResponse.json({ 
 						ok: true, 
@@ -115,8 +120,10 @@ export async function POST(req: Request) {
 		}
 		
 		// Return analysis without runner data
+		console.log('[AI API] Returning analysis without runner data:', analysis);
 		return NextResponse.json({ ok: true, data: analysis });
 	} catch (err: any) {
+		console.error('[AI API] Error:', err);
 		return NextResponse.json({ ok: false, error: err?.message || 'Unknown error' }, { status: 500 });
 	}
 } 

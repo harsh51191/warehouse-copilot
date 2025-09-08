@@ -146,11 +146,11 @@ function Trend({data, label, highlight, componentId, uiHighlights, isLoading}:{d
 
 function Funnel({trips, highlight, componentId, uiHighlights}:{trips:any[]; highlight?:boolean; componentId?: string; uiHighlights?: string[]}){
   const rows = trips.map(tr=>({
-    trip: tr.trip,
-    sortedPct: tr.total? Math.round((tr.sorted / tr.total)*100):0,
-    stagedPct: tr.total? Math.round((tr.staged / tr.total)*100):0,
-    loadedPct: tr.total? Math.round((tr.loaded / tr.total)*100):0,
-    qc: tr.qc
+    trip: tr.mm_trip || tr.trip || 'Unknown',
+    sortedPct: tr.sorted_pct ? Math.round(tr.sorted_pct * 100) : (tr.total? Math.round((tr.sorted / tr.total)*100):0),
+    stagedPct: tr.staged_pct ? Math.round(tr.staged_pct * 100) : (tr.total? Math.round((tr.staged / tr.total)*100):0),
+    loadedPct: tr.loaded_pct ? Math.round(tr.loaded_pct * 100) : (tr.total? Math.round((tr.loaded / tr.total)*100):0),
+    qc: tr.qc_ratio ? Math.round(tr.qc_ratio * (tr.total || 0)) : (tr.qc || 0)
   }))
   const highlightClass = componentId ? getHighlightClass(componentId, uiHighlights || []) : '';
   return (
@@ -240,7 +240,7 @@ function CopilotPanel({onQuery}:{onQuery:(q:string, uiPatch?:any)=>void}){
   const [isLoading, setIsLoading] = useState(false);
   const suggestions = [
     "How's loading going?",
-    "SBL trend for wave 3",
+    "SBL trend for current wave",
     "Show me trip progress",
     "Which trips block OTIF?",
   ];
@@ -311,16 +311,19 @@ function CopilotPanel({onQuery}:{onQuery:(q:string, uiPatch?:any)=>void}){
           </div>
         )}
         
-        {/* Show suggestions only when not loading */}
-        {!isLoading && (
-          <div className="flex gap-2 flex-wrap pt-2">
+      </div>
+      
+      {/* Suggested questions above input */}
+      {!isLoading && (
+        <div className="px-3 py-2 border-t bg-slate-50">
+          <div className="flex gap-2 flex-wrap">
             {messages.length === 1 ? (
               // Initial welcome suggestions
               suggestions.map(s => (
                 <button 
                   key={s} 
                   onClick={()=>send(s)} 
-                  className="text-xs border rounded-full px-3 py-1 hover:bg-slate-50 transition-colors"
+                  className="text-xs border rounded-full px-3 py-1 hover:bg-white transition-colors bg-white"
                   disabled={isLoading}
                 >
                   {s}
@@ -334,7 +337,7 @@ function CopilotPanel({onQuery}:{onQuery:(q:string, uiPatch?:any)=>void}){
                   <button 
                     key={s} 
                     onClick={()=>send(s)} 
-                    className="text-xs border rounded-full px-3 py-1 hover:bg-slate-50 transition-colors"
+                    className="text-xs border rounded-full px-3 py-1 hover:bg-white transition-colors bg-white"
                     disabled={isLoading}
                   >
                     {s}
@@ -343,8 +346,8 @@ function CopilotPanel({onQuery}:{onQuery:(q:string, uiPatch?:any)=>void}){
               </>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
       
       {/* Fixed input area at bottom */}
       <div className="p-3 border-t flex items-center gap-2 flex-shrink-0 bg-white">
@@ -466,6 +469,16 @@ export default function VapiWaveCopilotDual() {
   const [apiKey, setApiKey] = useState('');
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update current time every minute for dynamic projected finish
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Handle escape key for modal
   useEffect(() => {
@@ -610,43 +623,100 @@ export default function VapiWaveCopilotDual() {
                 <div className="text-center p-2 bg-slate-50 rounded-lg">
                   <div className="text-xs text-slate-500">Wave ID</div>
                   <div className="font-semibold">{dashboardArtifacts.macros?.waveInfo?.wave_id || 'N/A'}</div>
-                </div>
+        </div>
                 <div className="text-center p-2 bg-slate-50 rounded-lg">
                   <div className="text-xs text-slate-500">Total Lines</div>
                   <div className="font-semibold">{dashboardArtifacts.macros?.waveInfo?.total_order_lines || 0}</div>
-                </div>
-              </div>
+        </div>
+          </div>
               <div className="text-center p-2 bg-slate-50 rounded-lg">
                 <div className="text-xs text-slate-500">Projected Finish</div>
                 <div className="font-semibold text-lg">
-                  {dashboardArtifacts.overall_summary?.projected_finish_iso 
-                    ? new Date(dashboardArtifacts.overall_summary.projected_finish_iso).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
-                    : 'N/A'
-                  }
-                </div>
+                  {(() => {
+                    // Calculate dynamic projected finish based on current time + remaining work
+                    const sblTotal = dashboardArtifacts?.macros?.waveInfo?.split_lines_sbl || 0;
+                    const ptlTotal = dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 0;
+                    const sblCompleted = dashboardArtifacts?.sbl_stations?.reduce((sum: number, station: any) => sum + (station.packed || 0), 0) || 0;
+                    const ptlCompleted = dashboardArtifacts?.ptl_totals?.total_lines || 0;
+                    const sblRate = dashboardArtifacts?.sbl_stream?.ema_lph || 0;
+                    const ptlRate = dashboardArtifacts?.ptl_stream?.ema_lph || 0;
+                    
+                    if ((sblTotal === 0 && ptlTotal === 0) || (sblRate === 0 && ptlRate === 0)) {
+                      return 'N/A';
+                    }
+                    
+                    const sblRemaining = Math.max(0, sblTotal - sblCompleted);
+                    const ptlRemaining = Math.max(0, ptlTotal - ptlCompleted);
+                    
+                    // Calculate overall rates (per station × number of active stations)
+                    const activeSblStations = dashboardArtifacts?.sbl_stations?.filter((station: any) => station.packed > 0).length || 0;
+                    const activePtlStations = dashboardArtifacts?.ptl_totals?.by_station?.filter((station: any) => (station.lines_last_hour || 0) > 0).length || 0;
+                    const sblOverallRate = sblRate * activeSblStations;
+                    const ptlOverallRate = ptlRate * activePtlStations;
+                    
+                    // Use the bottleneck rate for projection
+                    const bottleneckRate = Math.min(sblOverallRate, ptlOverallRate);
+                    const remainingMinutes = bottleneckRate > 0 ? Math.round((sblRemaining + ptlRemaining) / bottleneckRate * 60) : 0;
+                    const projectedFinish = new Date(currentTime.getTime() + remainingMinutes * 60 * 1000);
+                    
+                    return projectedFinish.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                  })()}
+        </div>
                 <div className="text-xs text-slate-500">
-                  {dashboardArtifacts.overall_summary?.buffer_minutes 
-                    ? `${dashboardArtifacts.overall_summary.buffer_minutes > 0 ? '+' : ''}${dashboardArtifacts.overall_summary.buffer_minutes} min`
-                    : 'N/A'
-                  }
+                  {(() => {
+                    // Calculate dynamic projected finish based on current time + remaining work
+                    const sblTotal = dashboardArtifacts?.macros?.waveInfo?.split_lines_sbl || 0;
+                    const ptlTotal = dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 0;
+                    const sblCompleted = dashboardArtifacts?.sbl_stations?.reduce((sum: number, station: any) => sum + (station.packed || 0), 0) || 0;
+                    const ptlCompleted = dashboardArtifacts?.ptl_totals?.total_lines || 0;
+                    const sblRate = dashboardArtifacts?.sbl_stream?.ema_lph || 0;
+                    const ptlRate = dashboardArtifacts?.ptl_stream?.ema_lph || 0;
+                    
+                    if ((sblTotal === 0 && ptlTotal === 0) || (sblRate === 0 && ptlRate === 0)) {
+                      return 'N/A';
+                    }
+                    
+                    const sblRemaining = Math.max(0, sblTotal - sblCompleted);
+                    const ptlRemaining = Math.max(0, ptlTotal - ptlCompleted);
+                    
+                    // Calculate overall rates (per station × number of active stations)
+                    const activeSblStations = dashboardArtifacts?.sbl_stations?.filter((station: any) => station.packed > 0).length || 0;
+                    const activePtlStations = dashboardArtifacts?.ptl_totals?.by_station?.filter((station: any) => (station.lines_last_hour || 0) > 0).length || 0;
+                    const sblOverallRate = sblRate * activeSblStations;
+                    const ptlOverallRate = ptlRate * activePtlStations;
+                    
+                    // Use the bottleneck rate for projection
+                    const bottleneckRate = Math.min(sblOverallRate, ptlOverallRate);
+                    const remainingMinutes = bottleneckRate > 0 ? Math.round((sblRemaining + ptlRemaining) / bottleneckRate * 60) : 0;
+                    const projectedFinish = new Date(currentTime.getTime() + remainingMinutes * 60 * 1000);
+                    const diffMinutes = Math.round((projectedFinish.getTime() - currentTime.getTime()) / (1000 * 60));
+                    
+                    return diffMinutes > 0 ? `+${diffMinutes} min from now` : `${Math.abs(diffMinutes)} min ago`;
+                  })()}
                 </div>
-              </div>
+    </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="text-center p-2 bg-slate-50 rounded-lg">
-                  <div className="text-xs text-slate-500">SBL Coverage</div>
+                  <div className="text-xs text-slate-500">SBL Lines</div>
                   <div className="font-semibold">
-                    {dashboardArtifacts.overall_summary?.sbl_coverage_pct 
-                      ? `${Math.round(dashboardArtifacts.overall_summary.sbl_coverage_pct * 100)}%`
-                      : 'N/A'
+                    {dashboardArtifacts.macros?.waveInfo?.split_lines_sbl || 0}
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {dashboardArtifacts.macros?.waveInfo?.split_lines_sbl && dashboardArtifacts.macros?.waveInfo?.total_order_lines
+                      ? `${Math.round((dashboardArtifacts.macros.waveInfo.split_lines_sbl / dashboardArtifacts.macros.waveInfo.total_order_lines) * 100)}% of total`
+                      : ''
                     }
                   </div>
                 </div>
                 <div className="text-center p-2 bg-slate-50 rounded-lg">
-                  <div className="text-xs text-slate-500">PTL Coverage</div>
+                  <div className="text-xs text-slate-500">PTL Lines</div>
                   <div className="font-semibold">
-                    {dashboardArtifacts.overall_summary?.ptl_coverage_pct 
-                      ? `${Math.round(dashboardArtifacts.overall_summary.ptl_coverage_pct * 100)}%`
-                      : 'N/A'
+                    {dashboardArtifacts.macros?.waveInfo?.split_lines_ptl || 0}
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {dashboardArtifacts.macros?.waveInfo?.split_lines_ptl && dashboardArtifacts.macros?.waveInfo?.total_order_lines
+                      ? `${Math.round((dashboardArtifacts.macros.waveInfo.split_lines_ptl / dashboardArtifacts.macros.waveInfo.total_order_lines) * 100)}% of total`
+                      : ''
                     }
                   </div>
                 </div>
@@ -671,7 +741,7 @@ export default function VapiWaveCopilotDual() {
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                 SBL Operations
               </div>
-              <div className="flex items-center justify-between text-sm mb-1">
+                <div className="flex items-center justify-between text-sm mb-1">
                 <span className="font-medium">SBL Progress</span>
                 <Badge tone={
                   (dashboardArtifacts?.sbl_stations?.reduce((sum: number, station: any) => sum + station.packed, 0) || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_sbl || 1) > 0.9 ? 'good' : 
@@ -679,38 +749,38 @@ export default function VapiWaveCopilotDual() {
                 }>
                   {Math.round((dashboardArtifacts?.sbl_stations?.reduce((sum: number, station: any) => sum + station.packed, 0) || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_sbl || 1) * 100)}%
                 </Badge>
-              </div>
+                </div>
               <Progress value={Math.min(100, ((dashboardArtifacts?.sbl_stations?.reduce((sum: number, station: any) => sum + station.packed, 0) || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_sbl || 1)) * 100)} />
               <div className="text-xs text-slate-500 mt-1">
                 {dashboardArtifacts?.sbl_stations?.reduce((sum: number, station: any) => sum + station.packed, 0) || 0} / {dashboardArtifacts?.macros?.waveInfo?.split_lines_sbl || 0} Lines
               </div>
-            </div>
+          </div>
 
             {/* PTL Progress */}
             <div>
               <div className="text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 PTL Operations
-              </div>
+        </div>
               <div className="flex items-center justify-between text-sm mb-1">
                 <span className="font-medium">PTL Progress</span>
                 <Badge tone={
                   (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 0) === 0 ? 'warn' :
-                  (dashboardArtifacts?.ptl_totals?.last_hour_lines || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 1) > 0.9 ? 'good' : 
-                  (dashboardArtifacts?.ptl_totals?.last_hour_lines || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 1) > 0.7 ? 'warn' : 'bad'
+                  (dashboardArtifacts?.ptl_totals?.total_lines || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 1) > 0.9 ? 'good' : 
+                  (dashboardArtifacts?.ptl_totals?.total_lines || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 1) > 0.7 ? 'warn' : 'bad'
                 }>
                   {(dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 0) === 0 ? 'Not Started' :
-                   Math.round(((dashboardArtifacts?.ptl_totals?.last_hour_lines || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 1)) * 100) + '%'}
+                   Math.round(((dashboardArtifacts?.ptl_totals?.total_lines || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 1)) * 100) + '%'}
                 </Badge>
               </div>
               <Progress value={
                 (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 0) === 0 ? 0 :
-                Math.min(100, ((dashboardArtifacts?.ptl_totals?.last_hour_lines || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 1)) * 100)
+                Math.min(100, ((dashboardArtifacts?.ptl_totals?.total_lines || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 1)) * 100)
               } />
               <div className="text-xs text-slate-500 mt-1">
-                {dashboardArtifacts?.ptl_totals?.last_hour_lines || 0} / {dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 0} Lines
-              </div>
-            </div>
+                {dashboardArtifacts?.ptl_totals?.total_lines || 0} / {dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 0} Lines
+        </div>
+      </div>
 
             {/* Loading Progress */}
             <div>
@@ -739,6 +809,73 @@ export default function VapiWaveCopilotDual() {
             </div>
           </div>
         </div>
+
+        {/* Value Completion Summary */}
+        {dashboardArtifacts?.sbl_stations && (
+          <div className="rounded-2xl border p-4 bg-white shadow-sm mt-4">
+                <div className="font-semibold mb-4 flex items-center gap-2">
+                  SBL Value Completion Summary
+                </div>
+            
+            <div className="space-y-3">
+              {/* Total Value */}
+              <div className="bg-slate-50 rounded-lg p-3">
+                <div className="text-xs text-slate-600 mb-1">Total Value</div>
+                <div className="text-sm font-bold text-slate-800">
+                  ₹{dashboardArtifacts.sbl_stations.reduce((sum: number, station: any) => sum + (station.total_value || 0), 0).toLocaleString()}
+                </div>
+              </div>
+              
+              {/* Completed Value */}
+              <div className="bg-slate-50 rounded-lg p-3">
+                <div className="text-xs text-slate-600 mb-1">Completed Value</div>
+                <div className="text-sm font-bold text-green-600">
+                  ₹{dashboardArtifacts.sbl_stations.reduce((sum: number, station: any) => sum + (station.completed_value || 0), 0).toLocaleString()}
+                </div>
+              </div>
+              
+              {/* Value Completion % */}
+              <div className="bg-slate-50 rounded-lg p-3">
+                <div className="text-xs text-slate-600 mb-1">Value Completion</div>
+                <div className="text-sm font-bold text-blue-600">
+                  {Math.round(
+                    dashboardArtifacts.sbl_stations.reduce((sum: number, station: any) => sum + (station.completed_value || 0), 0) / 
+                    Math.max(dashboardArtifacts.sbl_stations.reduce((sum: number, station: any) => sum + (station.total_value || 0), 0), 1) * 100
+                  )}%
+                </div>
+              </div>
+            </div>
+            
+            {/* Top 3 Stations by Value Completion */}
+            <div className="mt-4">
+              <div className="text-xs font-medium text-slate-700 mb-2">Top Stations by Value Completion</div>
+              <div className="space-y-1">
+                {dashboardArtifacts.sbl_stations
+                  .filter((station: any) => (station.total_value || 0) > 0)
+                  .sort((a: any, b: any) => (b.value_completion_pct || 0) - (a.value_completion_pct || 0))
+                  .slice(0, 3)
+                  .map((station: any, index: number) => (
+                    <div key={station.station_code} className="flex items-center justify-between bg-slate-50 rounded-lg p-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
+                          {index + 1}
+                        </div>
+                        <span className="text-xs font-medium text-slate-700">{station.station_code}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs font-bold text-slate-800">
+                          {Math.round((station.value_completion_pct || 0) * 100)}%
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          ₹{Math.round(station.completed_value || 0).toLocaleString()} / ₹{Math.round(station.total_value || 0).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Middle Panel: Insights & Analytics */}
@@ -753,7 +890,7 @@ export default function VapiWaveCopilotDual() {
                   <div className="p-2 bg-blue-100 rounded-lg">
                     <Activity size={20} className="text-blue-600"/>
                   </div>
-                  <div>
+            <div>
                     <h3 className="text-lg font-bold text-slate-800">Key Performance Metrics</h3>
                     <p className="text-sm text-slate-500">Real-time operational insights</p>
                   </div>
@@ -762,15 +899,15 @@ export default function VapiWaveCopilotDual() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {/* Line Coverage */}
                   <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">Line Coverage</span>
                       <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    </div>
+              </div>
                     <div className="text-2xl font-bold text-slate-800">
                       {Math.round((dashboardArtifacts.overall_summary?.line_coverage_pct || 0) * 100)}%
-                    </div>
+              </div>
                     <div className="text-xs text-slate-500 mt-1">Overall progress</div>
-                  </div>
+            </div>
 
                   {/* SBL Productivity */}
                   <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
@@ -845,7 +982,7 @@ export default function VapiWaveCopilotDual() {
                     <div className="p-2 bg-red-100 rounded-lg">
                       <AlertTriangle size={20} className="text-red-600"/>
                     </div>
-                    <div>
+            <div>
                       <h3 className="text-lg font-bold text-slate-800">Issue Summary</h3>
                       <p className="text-sm text-slate-500">Station health status</p>
                     </div>
@@ -872,11 +1009,11 @@ export default function VapiWaveCopilotDual() {
                         setModalOpen(true);
                       }}
                     >
-                      <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                           <span className="text-sm font-medium text-slate-700">Productivity Issues</span>
-                        </div>
+              </div>
                         <span className="text-2xl font-bold text-red-600">
                           {dashboardArtifacts.sbl_stations.filter((s: any) => s.is_productivity_issue).length}
                         </span>
@@ -945,9 +1082,9 @@ export default function VapiWaveCopilotDual() {
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
         )}
 
         {/* AI Recommendations Panel */}
@@ -1009,8 +1146,8 @@ export default function VapiWaveCopilotDual() {
                     )}
                   </div>
                 ))}
-              </div>
-            </div>
+        </div>
+      </div>
 
             {/* SBL Stations - Bottom 3 */}
             <div className="mb-4">
@@ -1059,6 +1196,124 @@ export default function VapiWaveCopilotDual() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* SBL Infeed Coverage Table */}
+        {dashboardArtifacts?.sbl_infeed ? (
+          <div className={`rounded-2xl border p-4 bg-white shadow-sm ${getHighlightClass('SBLInfeed', uiHighlights)}`}>
+            <div className="font-medium mb-3 flex items-center gap-2"><Package size={16}/> Infeed Coverage (by SKU)</div>
+            
+            {/* Summary Stats */}
+            <div className="grid grid-cols-4 gap-4 mb-4">
+              <div className="text-center p-3 bg-slate-50 rounded-lg">
+                <div className="text-sm text-slate-600 mb-1">Total SKUs</div>
+                <div className="text-xl font-bold text-slate-800">{dashboardArtifacts.sbl_infeed.summary.total_skus}</div>
+              </div>
+              <div className="text-center p-3 bg-slate-50 rounded-lg">
+                <div className="text-sm text-slate-600 mb-1">Avg Coverage</div>
+                <div className="text-xl font-bold text-slate-800">{dashboardArtifacts.sbl_infeed.summary.avg_coverage_pct.toFixed(1)}%</div>
+              </div>
+              <div className="text-center p-3 bg-slate-50 rounded-lg">
+                <div className="text-sm text-slate-600 mb-1">Low Coverage</div>
+                <div className="text-xl font-bold text-red-600">{dashboardArtifacts.sbl_infeed.summary.low_coverage_skus}</div>
+              </div>
+              <div className="text-center p-3 bg-slate-50 rounded-lg">
+                <div className="text-sm text-slate-600 mb-1">Blocked HUs</div>
+                <div className="text-xl font-bold text-amber-600">{dashboardArtifacts.sbl_infeed.summary.blocked_hus}</div>
+              </div>
+            </div>
+
+            {/* SKU Coverage Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-2 font-medium text-slate-700">SKU</th>
+                    <th className="text-right py-2 font-medium text-slate-700">Pending Qty</th>
+                    <th className="text-right py-2 font-medium text-slate-700">Pending Lines</th>
+                    <th className="text-right py-2 font-medium text-slate-700">HUs Avail</th>
+                    <th className="text-right py-2 font-medium text-slate-700">Avail Qty</th>
+                    <th className="text-right py-2 font-medium text-slate-700">Coverage %</th>
+                    <th className="text-left py-2 font-medium text-slate-700">Top Bins</th>
+                    <th className="text-right py-2 font-medium text-slate-700">Blocked</th>
+                    <th className="text-right py-2 font-medium text-slate-700">Stale</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dashboardArtifacts.sbl_infeed.skus.slice(0, 10).map((sku: any, index: number) => {
+                    const coverageColor = sku.coverage_pct >= 80 ? 'text-green-600' : 
+                                        sku.coverage_pct >= 50 ? 'text-amber-600' : 'text-red-600';
+                    const hasIssues = sku.blocked_hu_count > 0 || sku.stale_hu_count > 0;
+                    
+                    return (
+                      <tr key={sku.sku_code} className={`border-b border-slate-100 ${hasIssues ? 'bg-red-50' : ''}`}>
+                        <td className="py-2 font-medium">{sku.sku_code}</td>
+                        <td className="py-2 text-right">{sku.pending_qty}</td>
+                        <td className="py-2 text-right">{sku.pending_lines}</td>
+                        <td className="py-2 text-right">{sku.hu_available_count}</td>
+                        <td className="py-2 text-right">{sku.available_qty}</td>
+                        <td className={`py-2 text-right font-medium ${coverageColor}`}>
+                          {sku.coverage_pct.toFixed(1)}%
+                        </td>
+                        <td className="py-2 text-left text-xs text-slate-600">
+                          {sku.top_bins.slice(0, 2).join(', ')}
+                        </td>
+                        <td className="py-2 text-right">
+                          {sku.blocked_hu_count > 0 && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                              {sku.blocked_hu_count}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2 text-right">
+                          {sku.stale_hu_count > 0 && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-800">
+                              {sku.stale_hu_count}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Feeder Picklist */}
+            <div className="mt-4">
+              <div className="text-sm font-medium text-slate-700 mb-2">Feeder Picklist (HUs)</div>
+              <div className="bg-slate-50 rounded-lg p-3">
+                <div className="text-xs text-slate-600 mb-2">Available HUs for feeding (sorted by age):</div>
+                <div className="space-y-1">
+                  {dashboardArtifacts.sbl_infeed.hus
+                    .filter((hu: any) => 
+                      hu.feed_status === 'NOT_FED' && 
+                      hu.inclusionStatus === 'INCLUDED' && 
+                      !hu.blocked_status && 
+                      hu.bin_status === 'ACTIVE'
+                    )
+                    .sort((a: any, b: any) => a.age_minutes - b.age_minutes)
+                    .slice(0, 10)
+                    .map((hu: any, index: number) => (
+                      <div key={hu.hu_code} className="flex justify-between items-center text-xs">
+                        <span className="font-medium">{hu.hu_code}</span>
+                        <span className="text-slate-600">{hu.sku_code} ({hu.qty} qty)</span>
+                        <span className="text-slate-500">{hu.bin_code}</span>
+                        <span className="text-slate-500">{hu.age_minutes}min old</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border p-4 bg-white shadow-sm">
+            <div className="font-medium mb-3 flex items-center gap-2"><Package size={16}/> Infeed Coverage (by SKU)</div>
+            <div className="text-center text-slate-500 py-8">
+              <div className="text-sm">No infeed data available</div>
+              <div className="text-xs mt-1">Upload partial_hus_pending_based_on_gtp_demand.xlsx to see SKU coverage data</div>
+            </div>
           </div>
         )}
         
@@ -1209,7 +1464,7 @@ export default function VapiWaveCopilotDual() {
         )}
 
         {/* Trip Progress Funnel */}
-        <Funnel trips={state.trips} highlight={state.highlight==='FUNNEL'} componentId="TripsGrid" uiHighlights={uiHighlights} />
+        <Funnel trips={dashboardArtifacts?.trips || []} highlight={state.highlight==='FUNNEL'} componentId="TripsGrid" uiHighlights={uiHighlights} />
       </div>
 
         {/* Right Panel: Full Height Copilot */}
@@ -1235,7 +1490,7 @@ export default function VapiWaveCopilotDual() {
               </div>
             </div>
           </div>
-        </div>
+      </div>
     </div>
   );
 
@@ -1315,7 +1570,7 @@ export default function VapiWaveCopilotDual() {
       </main>
 
       <footer className="py-6 text-center text-xs text-slate-500">Prototype · Mock data · Writes disabled</footer>
-
+      
       {/* Modal for Issue Details */}
       {modalOpen && modalContent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1328,12 +1583,12 @@ export default function VapiWaveCopilotDual() {
               >
                 <X size={24} />
               </button>
-            </div>
+        </div>
             
             <div className="mb-4">
               <div className="text-sm text-slate-600 mb-2">
                 {modalContent.count} stations found
-              </div>
+      </div>
               {modalContent.type === 'productivity' && (
                 <div className="text-sm text-slate-500">
                   These stations are performing below target productivity. Check equipment, training, or workflow issues.

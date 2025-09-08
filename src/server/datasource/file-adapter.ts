@@ -209,57 +209,6 @@ export async function getPTLTimelineFromFile(parameters: Record<string, any> = {
 	};
 }
 
-export async function getSBLSummaryFromFile(): Promise<any> {
-	const dir = getDataDir();
-	const fallbackDir = path.join(process.cwd(), "..");
-	const filePath = findLatestMatchingFile(dir, "sbl_summary_")
-		|| findLatestMatchingFile(fallbackDir, "sbl_summary_");
-	
-	if (!filePath) {
-		return {
-			stations: [],
-			summary: {
-				totalStations: 0,
-				averageProductivity: 0,
-				lastTenMinProductivity: 0
-			}
-		};
-	}
-	
-	const rows = readFirstSheetAsJson(filePath);
-	const stations: any[] = [];
-	let totalProductivity = 0;
-	let totalLastTenMin = 0;
-	
-	for (const r of rows as any[]) {
-		const stationCode = String(r.zone_code || r.station_code || "").trim();
-		const avgProductivity = Number(r.avg_productivity || 0) || 0;
-		const lastTenMinProductivity = Number(r.last_ten_min_productivity || 0) || 0;
-		
-		if (!stationCode) continue;
-		
-		stations.push({
-			station_code: stationCode,
-			avg_productivity: avgProductivity,
-			last_ten_min_productivity: lastTenMinProductivity
-		});
-		
-		totalProductivity += avgProductivity;
-		totalLastTenMin += lastTenMinProductivity;
-	}
-	
-	const averageProductivity = stations.length > 0 ? totalProductivity / stations.length : 0;
-	const averageLastTenMin = stations.length > 0 ? totalLastTenMin / stations.length : 0;
-	
-	return {
-		stations,
-		summary: {
-			totalStations: stations.length,
-			averageProductivity: Math.round(averageProductivity * 100) / 100,
-			lastTenMinProductivity: Math.round(averageLastTenMin * 100) / 100
-		}
-	};
-}
 
 export async function getSBLTableLinesFromFile(): Promise<any> {
 	const dir = getDataDir();
@@ -506,13 +455,21 @@ export async function getStationCompletionFromFile(parameters: Record<string, an
 	const stations: any[] = [];
 	let totalCompletion = 0;
 	let completedStations = 0;
+	let totalValue = 0;
+	let completedValue = 0;
+	let totalValueCompletion = 0;
 	
 	for (const r of rows as any[]) {
 		// Use actual column names from line completion Excel file
 		const code = String(r.code || "").trim();
 		const totalDemandLines = Number(r.total_demand_lines || 0) || 0;
 		const totalPackedLines = Number(r.total_demand_packed_lines || 0) || 0;
-		const completionPercentage = parseFloat(String(r.completion_percentage || "0").replace('%', '')) || 0;
+		const completionPercentage = parseFloat(String(r.line_completion_percentage || "0").replace('%', '')) || 0;
+		
+		// New value-related columns
+		const stationTotalValue = Number(r.total_value || 0) || 0;
+		const stationCompletedValue = Number(r.completed_value || 0) || 0;
+		const valueCompletionPercentage = parseFloat(String(r.value_completion_percentage || "0").replace('%', '')) || 0;
 		
 		if (!code) continue;
 		
@@ -521,21 +478,136 @@ export async function getStationCompletionFromFile(parameters: Record<string, an
 			totalDemandLines,
 			totalPackedLines,
 			completionPercentage,
-			pendingLines: totalDemandLines - totalPackedLines
+			pendingLines: totalDemandLines - totalPackedLines,
+			totalValue: stationTotalValue,
+			completedValue: stationCompletedValue,
+			valueCompletionPercentage,
+			pendingValue: stationTotalValue - stationCompletedValue
 		});
 		
 		totalCompletion += completionPercentage;
+		totalValue += stationTotalValue;
+		completedValue += stationCompletedValue;
+		totalValueCompletion += valueCompletionPercentage;
 		if (completionPercentage >= 100) completedStations++;
 	}
 	
 	const averageCompletion = stations.length > 0 ? totalCompletion / stations.length : 0;
+	const averageValueCompletion = stations.length > 0 ? totalValueCompletion / stations.length : 0;
 	
 	return {
 		stations,
 		summary: {
 			totalStations: stations.length,
 			averageCompletion: Math.round(averageCompletion * 100) / 100,
-			completedStations
+			completedStations,
+			totalValue: Math.round(totalValue * 100) / 100,
+			completedValue: Math.round(completedValue * 100) / 100,
+			pendingValue: Math.round((totalValue - completedValue) * 100) / 100,
+			averageValueCompletion: Math.round(averageValueCompletion * 100) / 100,
+			valueCompletionPercentage: totalValue > 0 ? Math.round((completedValue / totalValue) * 100 * 100) / 100 : 0
 		}
 	};
-} 
+}
+
+export async function getSBLInfeedFromFile(): Promise<{ skus: any[], hus: any[] }> {
+	const dir = getDataDir();
+	const fallbackDir = path.join(process.cwd(), "..");
+	const filePath = findLatestMatchingFile(dir, "partial_hus_pending_based_on_gtp_demand")
+		|| findLatestMatchingFile(dir, "partial_hus_pending")
+		|| findLatestMatchingFile(dir, "sbl_infeed")
+		|| findLatestMatchingFile(dir, "infeed")
+		|| findLatestMatchingFile(fallbackDir, "partial_hus_pending_based_on_gtp_demand")
+		|| findLatestMatchingFile(fallbackDir, "partial_hus_pending")
+		|| findLatestMatchingFile(fallbackDir, "sbl_infeed")
+		|| findLatestMatchingFile(fallbackDir, "infeed");
+	
+	console.log('[DEBUG] SBL Infeed file path:', filePath);
+	
+	if (!filePath) {
+		console.log('[DEBUG] No SBL infeed file found');
+		return { skus: [], hus: [] };
+	}
+	
+	const rows = readFirstSheetAsJson(filePath);
+	console.log('[DEBUG] SBL Infeed rows count:', rows.length);
+	console.log('[DEBUG] SBL Infeed first row keys:', rows.length > 0 ? Object.keys(rows[0]) : 'No rows');
+	
+	const skus: any[] = [];
+	const hus: any[] = [];
+	
+	for (const r of rows as any[]) {
+		const skuCode = String(r.sku_code || "").trim();
+		const huCode = String(r.hu_code || "").trim();
+		
+		if (!skuCode || !huCode) continue;
+		
+		// Normalize feed status
+		const feedStatus = String(r.feed_status || "").toUpperCase();
+		const normalizedFeedStatus = feedStatus === 'FED' ? 'FED' : 'NOT_FED';
+		
+		// Normalize inclusion status
+		const inclusionStatus = String(r.inclusionStatus || "").toUpperCase();
+		const normalizedInclusionStatus = inclusionStatus === 'INCLUDED' ? 'INCLUDED' : 
+			inclusionStatus === 'LOCKED' ? 'LOCKED' : 
+			inclusionStatus === 'BLOCKED' ? 'BLOCKED' : 'EXCLUDED';
+		
+		// Normalize bin status
+		const binStatus = String(r.bin_status || "").toUpperCase();
+		const normalizedBinStatus = binStatus === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
+		
+		// Calculate age in minutes
+		let updatedAt = r.updatedAt || r.timestamp || new Date().toISOString();
+		
+		// Handle Excel date serial numbers
+		if (typeof updatedAt === 'number') {
+			// Convert Excel date serial number to JavaScript Date
+			const excelEpoch = new Date(1900, 0, 1);
+			const excelDate = new Date(excelEpoch.getTime() + (updatedAt - 2) * 24 * 60 * 60 * 1000);
+			updatedAt = excelDate.toISOString();
+		}
+		
+		const ageMinutes = Math.floor((Date.now() - new Date(updatedAt).getTime()) / (1000 * 60));
+		
+		// Add HU data
+		hus.push({
+			hu_code: huCode,
+			sku_code: skuCode,
+			qty: Number(r.qty || 0),
+			bin_code: String(r.bin_code || ""),
+			feed_status: normalizedFeedStatus,
+			blocked_status: Boolean(r.blocked_status),
+			inclusionStatus: normalizedInclusionStatus,
+			updatedAt: updatedAt,
+			age_minutes: ageMinutes,
+			bin_status: normalizedBinStatus,
+			// Additional fields for reference
+			sku_code_1: String(r['sku_code.1'] || ""),
+			batch: String(r.batch || ""),
+			batch_1: String(r['batch.1'] || ""),
+			uom: String(r.uom || ""),
+			bucket: String(r.bucket || ""),
+			value_pending: Number(r.value_pending || 0)
+		});
+		
+		// Add SKU data (we'll aggregate this later)
+		skus.push({
+			sku_code: skuCode,
+			batch: String(r.batch || ""),
+			demand_qty: Number(r.demand_qty || 0),
+			packed_qty: Number(r.packed_qty || 0),
+			pending_qty: Number(r.pending_qty || 0),
+			total_demand_lines: Number(r.total_demand_lines || 0),
+			demand_packed_lines: Number(r.demand_packed_lines || 0),
+			pending_lines: Number(r.pending_lines || 0),
+			value_pending: Number(r.value_pending || 0),
+			// Additional fields for reference
+			sku_code_1: String(r['sku_code.1'] || ""),
+			uom: String(r.uom || ""),
+			bucket: String(r.bucket || "")
+		});
+	}
+	
+	console.log('[DEBUG] SBL Infeed processed - SKUs:', skus.length, 'HUs:', hus.length);
+	return { skus, hus };
+}

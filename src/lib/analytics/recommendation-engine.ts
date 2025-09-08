@@ -191,7 +191,7 @@ export class RecommendationEngine {
     // Handle SBL station productivity ranking questions
     if (lowerQuestion.includes('sbl') && (lowerQuestion.includes('lowest') || lowerQuestion.includes('worst') || lowerQuestion.includes('bottom')) && lowerQuestion.includes('productivity')) {
       if (artifacts.sbl_stations.length === 0) {
-        return `SBL station data is not available. Please upload the 'line_completion_2.xlsx' and 'sbl_summary.xlsx' files to get station productivity information.`;
+        return `SBL station data is not available. Please upload the 'line_completion_2.xlsx' and 'sbl_table_lines.xlsx' files to get station productivity information.`;
       }
       
       // Sort stations by productivity (lowest first)
@@ -206,7 +206,7 @@ export class RecommendationEngine {
     // Handle SBL station productivity ranking questions (highest)
     if (lowerQuestion.includes('sbl') && (lowerQuestion.includes('highest') || lowerQuestion.includes('best') || lowerQuestion.includes('top')) && lowerQuestion.includes('productivity')) {
       if (artifacts.sbl_stations.length === 0) {
-        return `SBL station data is not available. Please upload the 'line_completion_2.xlsx' and 'sbl_summary.xlsx' files to get station productivity information.`;
+        return `SBL station data is not available. Please upload the 'line_completion_2.xlsx' and 'sbl_table_lines.xlsx' files to get station productivity information.`;
       }
       
       // Sort stations by productivity (highest first)
@@ -442,19 +442,20 @@ export class RecommendationEngine {
     
     // Handle SBL SKUs questions
     if (lowerQuestion.includes('sbl') && (lowerQuestion.includes('sku') || lowerQuestion.includes('pending'))) {
-      if (!artifacts.sbl_skus || !artifacts.sbl_skus.skus || artifacts.sbl_skus.skus.length === 0) {
-        return "No SBL SKUs data available. Please upload sbl_skus.xlsx file to see SKU status and pending information.";
+      if (!artifacts.sbl_infeed || !artifacts.sbl_infeed.skus || artifacts.sbl_infeed.skus.length === 0) {
+        return "No SBL infeed data available. Please upload the partial_hus_pending_based_on_gtp_demand.xlsx file to see SKU status and pending information.";
       }
       
-      const summary = artifacts.sbl_skus.summary;
-      const pendingSKUs = artifacts.sbl_skus.skus.filter((sku: any) => sku.status === 'pending');
-      const topPending = pendingSKUs.sort((a: any, b: any) => b.pending_lines - a.pending_lines).slice(0, 3);
+      const infeed = artifacts.sbl_infeed;
+      const pendingSKUs = infeed.skus.filter((sku: any) => sku.pending_qty > 0);
       
-      let response = `SBL SKUs Status: ${summary.totalSKUs} total SKUs, ${summary.pendingSKUs} pending, ${summary.completedSKUs} completed (${Math.round(summary.completionRate * 100)}% completion rate). `;
+      let response = `SBL Infeed Status: ${infeed.skus.length} total SKUs, ${pendingSKUs.length} with pending quantity.\n\n`;
       
-      if (topPending.length > 0) {
-        response += `Top pending SKUs by lines: `;
-        response += topPending.map((sku: any) => `${sku.sku} (${sku.pending_lines} lines at ${sku.station_code})`).join(', ');
+      if (pendingSKUs.length > 0) {
+        response += `SKUs to be fed for SBL:\n`;
+        pendingSKUs.sort((a: any, b: any) => b.pending_qty - a.pending_qty).forEach((sku: any, index: number) => {
+          response += `${index + 1}. ${sku.sku_code} - ${sku.pending_qty} qty needed\n`;
+        });
       }
       
       return response;
@@ -559,11 +560,11 @@ export class RecommendationEngine {
         loaded_crates: artifacts.trips?.reduce((sum, t) => sum + Math.round(t.loaded_pct * ((t as any).total || 0)), 0) || 0
       },
       sbl_skus: {
-        total_skus: artifacts.sbl_skus?.summary?.totalSKUs || 0,
-        pending_skus: artifacts.sbl_skus?.summary?.pendingSKUs || 0,
-        completed_skus: artifacts.sbl_skus?.summary?.completedSKUs || 0,
-        completion_rate: Math.round((artifacts.sbl_skus?.summary?.completionRate || 0) * 100),
-        top_pending: artifacts.sbl_skus?.skus?.filter((s: any) => s.status === 'pending').sort((a: any, b: any) => b.pending_lines - a.pending_lines).slice(0, 3) || []
+        total_skus: artifacts.sbl_infeed?.skus?.length || 0,
+        pending_skus: artifacts.sbl_infeed?.skus?.filter((s: any) => s.pending_qty > 0).length || 0,
+        completed_skus: artifacts.sbl_infeed?.skus?.filter((s: any) => s.pending_qty === 0).length || 0,
+        completion_rate: artifacts.sbl_infeed?.skus && artifacts.sbl_infeed.skus.length > 0 ? Math.round((artifacts.sbl_infeed.skus.filter((s: any) => s.pending_qty === 0).length / artifacts.sbl_infeed.skus.length) * 100) : 0,
+        top_pending: artifacts.sbl_infeed?.skus?.filter((s: any) => s.pending_qty > 0).sort((a: any, b: any) => b.pending_qty - a.pending_qty).slice(0, 3) || []
       },
       recommendations: this.generateRecommendations(artifacts).slice(0, 3)
     };
@@ -807,6 +808,85 @@ export class RecommendationEngine {
       const highRiskCount = artifacts.trips.filter(t => t.risk > 0.7).length;
       
       return `Trip-level Loading Status: ${totalTrips} trips total, average ${avgLoaded.toFixed(1)}% loaded. ${highRiskCount} trips at high risk, ${totalTrips - highRiskCount} progressing normally.`;
+    }
+
+    // Handle SBL infeed questions
+    if (lowerQuestion.includes('infeed') || lowerQuestion.includes('sku') && lowerQuestion.includes('feed')) {
+      if (!artifacts.sbl_infeed) {
+        return `No SBL infeed data available. Please upload the 'partial_hus_pending_based_on_gtp_demand' file to see SKU coverage and feeding information.`;
+      }
+      
+      const infeed = artifacts.sbl_infeed;
+      const lowCoverageSKUs = infeed.skus.filter(s => s.coverage_pct < 50).length;
+      const blockedHUs = infeed.summary.blocked_hus;
+      const staleHUs = infeed.summary.stale_hus;
+      
+      return `SBL Infeed Status: ${infeed.summary.total_skus} SKUs, ${infeed.summary.total_hus} HUs available. ${lowCoverageSKUs} SKUs with low coverage (<50%), ${blockedHUs} blocked HUs, ${staleHUs} stale HUs. Average coverage: ${infeed.summary.avg_coverage_pct.toFixed(1)}%.`;
+    }
+
+    // Handle SKU coverage questions
+    if (lowerQuestion.includes('coverage') && (lowerQuestion.includes('sku') || lowerQuestion.includes('infeed'))) {
+      if (!artifacts.sbl_infeed) {
+        return `No SKU coverage data available. Please upload the infeed file to see coverage information.`;
+      }
+      
+      const infeed = artifacts.sbl_infeed;
+      const lowCoverageSKUs = infeed.skus.filter(s => s.coverage_pct < 50);
+      const highCoverageSKUs = infeed.skus.filter(s => s.coverage_pct >= 80);
+      
+      if (lowCoverageSKUs.length === 0) {
+        return `All SKUs have good coverage (≥50%). ${highCoverageSKUs.length} SKUs have excellent coverage (≥80%).`;
+      }
+      
+      return `${lowCoverageSKUs.length} SKUs have low coverage: ${lowCoverageSKUs.map(s => `${s.sku_code} (${s.coverage_pct.toFixed(1)}%)`).join(', ')}. These need immediate feeding attention.`;
+    }
+
+    // Handle feeder picklist questions
+    if (lowerQuestion.includes('picklist') || lowerQuestion.includes('feed next') || lowerQuestion.includes('what should we feed')) {
+      if (!artifacts.sbl_infeed) {
+        return `No feeder picklist data available. Please upload the infeed file to see what should be fed next.`;
+      }
+      
+      const infeed = artifacts.sbl_infeed;
+      const availableHUs = infeed.hus.filter(h => 
+        h.feed_status === 'NOT_FED' && 
+        h.inclusionStatus === 'INCLUDED' && 
+        !h.blocked_status && 
+        h.bin_status === 'ACTIVE'
+      );
+      
+      if (availableHUs.length === 0) {
+        return `No HUs available for feeding. All HUs are either fed, blocked, or excluded.`;
+      }
+      
+      const topHUs = availableHUs
+        .sort((a, b) => a.age_minutes - b.age_minutes)
+        .slice(0, 10);
+      
+      return `Feeder Picklist (Top ${topHUs.length} HUs): ${topHUs.map(h => `${h.hu_code} (${h.sku_code}, ${h.qty} qty, ${h.age_minutes}min old)`).join(', ')}. Focus on oldest HUs first.`;
+    }
+
+    // Handle starvation with infeed context
+    if (lowerQuestion.includes('starving') || lowerQuestion.includes('starvation')) {
+      const starvedStations = artifacts.sbl_stations.filter(s => s.starved);
+      if (starvedStations.length === 0) {
+        return `No SBL stations are currently starved. All stations have adequate work.`;
+      }
+      
+      let response = `${starvedStations.length} SBL stations are starved: ${starvedStations.map(s => s.station_code).join(', ')}. `;
+      
+      if (artifacts.sbl_infeed) {
+        const lowCoverageSKUs = artifacts.sbl_infeed.skus.filter(s => s.coverage_pct < 50).length;
+        if (lowCoverageSKUs > 0) {
+          response += `Infeed coverage is low for ${lowCoverageSKUs} SKUs - feeding these may help resolve starvation.`;
+        } else {
+          response += `Infeed coverage looks good - starvation may be due to productivity issues.`;
+        }
+      } else {
+        response += `Check infeed coverage and consider feeding open SKUs to resolve starvation.`;
+      }
+      
+      return response;
     }
 
     // Default comprehensive response

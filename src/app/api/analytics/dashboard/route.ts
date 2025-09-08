@@ -6,20 +6,26 @@ import { DashboardArtifacts } from '@/lib/analytics/dashboard-artifacts';
 export async function GET() {
   try {
     // Use /tmp for Vercel compatibility in production
-    const derivedDir = process.env.NODE_ENV === 'production' 
+    const derivedDir = process.env.VERCEL === '1' 
       ? '/tmp/data/derived' 
       : join(process.cwd(), 'data', 'derived');
     const artifactsPath = join(derivedDir, 'dashboard_artifacts.json');
     
+    console.log('[DASHBOARD API] Looking for artifacts at:', artifactsPath);
+    console.log('[DASHBOARD API] VERCEL env:', process.env.VERCEL);
+    
     try {
       const artifactsData = await readFile(artifactsPath, 'utf-8');
       const artifacts: DashboardArtifacts = JSON.parse(artifactsData);
+      
+      console.log('[DASHBOARD API] Successfully loaded artifacts, SBL rate:', artifacts.sbl_stream?.ema_lph);
       
       return NextResponse.json({
         success: true,
         data: artifacts
       });
     } catch (fileError) {
+      console.log('[DASHBOARD API] File read error:', fileError instanceof Error ? fileError.message : String(fileError));
       // If artifacts don't exist, return empty state
       return NextResponse.json({
         success: true,

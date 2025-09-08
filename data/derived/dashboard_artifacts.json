@@ -1,12 +1,12 @@
 {
   "overall_summary": {
-    "projected_finish_iso": "2025-09-08T02:52:23.499Z",
-    "buffer_minutes": -2032,
-    "otif_risk": "HIGH",
-    "line_coverage_pct": 0.71,
-    "wave_status": "LATE",
-    "sbl_coverage_pct": 1.704,
-    "ptl_coverage_pct": 0
+    "projected_finish_iso": "2025-09-08T07:26:11.781Z",
+    "buffer_minutes": 590,
+    "otif_risk": "LOW",
+    "line_coverage_pct": 1,
+    "wave_status": "ON_TRACK",
+    "sbl_coverage_pct": 0.9825856302617921,
+    "ptl_coverage_pct": 0.9944370860927152
   },
   "sbl_stations": [
     {
@@ -15,14 +15,18 @@
       "packed": 331,
       "remaining": 4,
       "completion_pct": 0.9881,
-      "last10_lph": 24,
+      "last10_lph": 0,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 93,
+      "recent_infeed_lph": 0,
       "is_productivity_issue": true,
-      "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "is_infeed_issue": true,
+      "issue_type": "infeed",
+      "total_value": 43815,
+      "completed_value": 40947,
+      "pending_value": 2868,
+      "value_completion_pct": 0.9345429647381035
     },
     {
       "station_code": "V032",
@@ -30,14 +34,18 @@
       "packed": 349,
       "remaining": 3,
       "completion_pct": 0.9915,
-      "last10_lph": 22.5,
+      "last10_lph": 0,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 90,
+      "recent_infeed_lph": 0,
       "is_productivity_issue": true,
-      "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "is_infeed_issue": true,
+      "issue_type": "infeed",
+      "total_value": 60646,
+      "completed_value": 54513,
+      "pending_value": 6133,
+      "value_completion_pct": 0.8988721432575933
     },
     {
       "station_code": "V033",
@@ -45,14 +53,18 @@
       "packed": 401,
       "remaining": 3,
       "completion_pct": 0.9926,
-      "last10_lph": 26.400000000000002,
+      "last10_lph": 0,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 100.80000000000001,
+      "recent_infeed_lph": 0,
       "is_productivity_issue": true,
-      "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "is_infeed_issue": true,
+      "issue_type": "infeed",
+      "total_value": 92612,
+      "completed_value": 80408,
+      "pending_value": 12204,
+      "value_completion_pct": 0.8682244201615341
     },
     {
       "station_code": "V034",
@@ -60,14 +72,18 @@
       "packed": 319,
       "remaining": 4,
       "completion_pct": 0.9876,
-      "last10_lph": 8,
+      "last10_lph": 7,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 32,
+      "recent_infeed_lph": 23,
       "is_productivity_issue": true,
       "is_infeed_issue": true,
-      "issue_type": "infeed"
+      "issue_type": "infeed",
+      "total_value": 49053,
+      "completed_value": 43838,
+      "pending_value": 5215,
+      "value_completion_pct": 0.8936864208101442
     },
     {
       "station_code": "V035",
@@ -75,51 +91,6 @@
       "packed": 342,
       "remaining": 3,
       "completion_pct": 0.9913,
-      "last10_lph": 27,
-      "target_lph": 120,
-      "starved": false,
-      "health_color": "red",
-      "recent_infeed_lph": 99,
-      "is_productivity_issue": true,
-      "is_infeed_issue": false,
-      "issue_type": "productivity"
-    },
-    {
-      "station_code": "V036",
-      "total": 340,
-      "packed": 333,
-      "remaining": 7,
-      "completion_pct": 0.9793999999999999,
-      "last10_lph": 16,
-      "target_lph": 120,
-      "starved": false,
-      "health_color": "red",
-      "recent_infeed_lph": 54,
-      "is_productivity_issue": true,
-      "is_infeed_issue": true,
-      "issue_type": "infeed"
-    },
-    {
-      "station_code": "V037",
-      "total": 346,
-      "packed": 338,
-      "remaining": 8,
-      "completion_pct": 0.9769,
-      "last10_lph": 27.599999999999998,
-      "target_lph": 120,
-      "starved": false,
-      "health_color": "red",
-      "recent_infeed_lph": 108,
-      "is_productivity_issue": true,
-      "is_infeed_issue": false,
-      "issue_type": "productivity"
-    },
-    {
-      "station_code": "V038",
-      "total": 433,
-      "packed": 429,
-      "remaining": 4,
-      "completion_pct": 0.9908,
       "last10_lph": 12,
       "target_lph": 120,
       "starved": false,
@@ -127,7 +98,68 @@
       "recent_infeed_lph": 42,
       "is_productivity_issue": true,
       "is_infeed_issue": true,
-      "issue_type": "infeed"
+      "issue_type": "infeed",
+      "total_value": 54951,
+      "completed_value": 46755,
+      "pending_value": 8196,
+      "value_completion_pct": 0.8508489381448928
+    },
+    {
+      "station_code": "V036",
+      "total": 340,
+      "packed": 333,
+      "remaining": 7,
+      "completion_pct": 0.9793999999999999,
+      "last10_lph": 6,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 21,
+      "is_productivity_issue": true,
+      "is_infeed_issue": true,
+      "issue_type": "infeed",
+      "total_value": 72670,
+      "completed_value": 58855,
+      "pending_value": 13815,
+      "value_completion_pct": 0.8098940415577267
+    },
+    {
+      "station_code": "V037",
+      "total": 346,
+      "packed": 338,
+      "remaining": 8,
+      "completion_pct": 0.9769,
+      "last10_lph": 5,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 20,
+      "is_productivity_issue": true,
+      "is_infeed_issue": true,
+      "issue_type": "infeed",
+      "total_value": 76182,
+      "completed_value": 62767,
+      "pending_value": 13415,
+      "value_completion_pct": 0.8239085348244992
+    },
+    {
+      "station_code": "V038",
+      "total": 433,
+      "packed": 429,
+      "remaining": 4,
+      "completion_pct": 0.9908,
+      "last10_lph": 6,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 26,
+      "is_productivity_issue": true,
+      "is_infeed_issue": true,
+      "issue_type": "infeed",
+      "total_value": 129155,
+      "completed_value": 83822,
+      "pending_value": 45333,
+      "value_completion_pct": 0.6490031357671016
     },
     {
       "station_code": "V039",
@@ -135,14 +167,18 @@
       "packed": 358,
       "remaining": 2,
       "completion_pct": 0.9944,
-      "last10_lph": 16,
+      "last10_lph": 10.5,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 54,
+      "recent_infeed_lph": 40.5,
       "is_productivity_issue": true,
       "is_infeed_issue": true,
-      "issue_type": "infeed"
+      "issue_type": "infeed",
+      "total_value": 55957,
+      "completed_value": 49856,
+      "pending_value": 6101,
+      "value_completion_pct": 0.890969851850528
     },
     {
       "station_code": "V040",
@@ -150,14 +186,18 @@
       "packed": 335,
       "remaining": 4,
       "completion_pct": 0.9882,
-      "last10_lph": 12,
+      "last10_lph": 10.5,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 46.5,
+      "recent_infeed_lph": 40.5,
       "is_productivity_issue": true,
       "is_infeed_issue": true,
-      "issue_type": "infeed"
+      "issue_type": "infeed",
+      "total_value": 50346,
+      "completed_value": 43719,
+      "pending_value": 6627,
+      "value_completion_pct": 0.8683708735549994
     },
     {
       "station_code": "V041",
@@ -165,14 +205,18 @@
       "packed": 435,
       "remaining": 9,
       "completion_pct": 0.9797,
-      "last10_lph": 25.200000000000003,
+      "last10_lph": 7.199999999999999,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 91.19999999999999,
+      "recent_infeed_lph": 26.400000000000002,
       "is_productivity_issue": true,
-      "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "is_infeed_issue": true,
+      "issue_type": "infeed",
+      "total_value": 115257,
+      "completed_value": 75835,
+      "pending_value": 39422,
+      "value_completion_pct": 0.6579643752657105
     },
     {
       "station_code": "V042",
@@ -180,14 +224,18 @@
       "packed": 358,
       "remaining": 1,
       "completion_pct": 0.9972,
-      "last10_lph": 19.5,
+      "last10_lph": 7.199999999999999,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 79.5,
+      "recent_infeed_lph": 20.4,
       "is_productivity_issue": true,
-      "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "is_infeed_issue": true,
+      "issue_type": "infeed",
+      "total_value": 75826,
+      "completed_value": 65737,
+      "pending_value": 10089,
+      "value_completion_pct": 0.8669453749373566
     },
     {
       "station_code": "V043",
@@ -195,14 +243,18 @@
       "packed": 363,
       "remaining": 7,
       "completion_pct": 0.9811,
-      "last10_lph": 45.599999999999994,
+      "last10_lph": 36,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 181.2,
+      "recent_infeed_lph": 138,
       "is_productivity_issue": true,
       "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "issue_type": "productivity",
+      "total_value": 112031,
+      "completed_value": 59168,
+      "pending_value": 52863,
+      "value_completion_pct": 0.5281395328078835
     },
     {
       "station_code": "V044",
@@ -210,14 +262,18 @@
       "packed": 336,
       "remaining": 5,
       "completion_pct": 0.9853000000000001,
-      "last10_lph": 21,
+      "last10_lph": 30,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 84,
+      "recent_infeed_lph": 114,
       "is_productivity_issue": true,
       "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "issue_type": "productivity",
+      "total_value": 46824,
+      "completed_value": 42018,
+      "pending_value": 4806,
+      "value_completion_pct": 0.8973603280369042
     },
     {
       "station_code": "V045",
@@ -225,14 +281,18 @@
       "packed": 349,
       "remaining": 9,
       "completion_pct": 0.9749,
-      "last10_lph": 22.799999999999997,
+      "last10_lph": 13,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 90,
+      "recent_infeed_lph": 46,
       "is_productivity_issue": true,
-      "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "is_infeed_issue": true,
+      "issue_type": "infeed",
+      "total_value": 53752,
+      "completed_value": 46808,
+      "pending_value": 6944,
+      "value_completion_pct": 0.8708141092424468
     },
     {
       "station_code": "V046",
@@ -240,14 +300,18 @@
       "packed": 340,
       "remaining": 6,
       "completion_pct": 0.9826999999999999,
-      "last10_lph": 24,
+      "last10_lph": 7,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 96,
+      "recent_infeed_lph": 32,
       "is_productivity_issue": true,
-      "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "is_infeed_issue": true,
+      "issue_type": "infeed",
+      "total_value": 54687,
+      "completed_value": 46819,
+      "pending_value": 7868,
+      "value_completion_pct": 0.8561266845868305
     },
     {
       "station_code": "V047",
@@ -255,14 +319,18 @@
       "packed": 336,
       "remaining": 12,
       "completion_pct": 0.9655,
-      "last10_lph": 10,
+      "last10_lph": 16,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 36,
+      "recent_infeed_lph": 63,
       "is_productivity_issue": true,
-      "is_infeed_issue": true,
-      "issue_type": "infeed"
+      "is_infeed_issue": false,
+      "issue_type": "productivity",
+      "total_value": 57578,
+      "completed_value": 44013,
+      "pending_value": 13565,
+      "value_completion_pct": 0.7644065441661746
     },
     {
       "station_code": "V048",
@@ -270,14 +338,18 @@
       "packed": 343,
       "remaining": 3,
       "completion_pct": 0.9913,
-      "last10_lph": 30,
+      "last10_lph": 51,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 116,
+      "recent_infeed_lph": 203,
       "is_productivity_issue": true,
       "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "issue_type": "productivity",
+      "total_value": 39704,
+      "completed_value": 36692,
+      "pending_value": 3012,
+      "value_completion_pct": 0.9241386258311505
     },
     {
       "station_code": "V049",
@@ -285,14 +357,18 @@
       "packed": 352,
       "remaining": 4,
       "completion_pct": 0.9887999999999999,
-      "last10_lph": 28.5,
+      "last10_lph": 15.600000000000001,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 114,
+      "recent_infeed_lph": 54,
       "is_productivity_issue": true,
-      "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "is_infeed_issue": true,
+      "issue_type": "infeed",
+      "total_value": 51597,
+      "completed_value": 47664,
+      "pending_value": 3933,
+      "value_completion_pct": 0.9237746380603524
     },
     {
       "station_code": "V050",
@@ -300,14 +376,18 @@
       "packed": 337,
       "remaining": 10,
       "completion_pct": 0.9712000000000001,
-      "last10_lph": 25,
+      "last10_lph": 23,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 95,
+      "recent_infeed_lph": 87,
       "is_productivity_issue": true,
       "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "issue_type": "productivity",
+      "total_value": 67980,
+      "completed_value": 53505,
+      "pending_value": 14475,
+      "value_completion_pct": 0.7870697263901146
     },
     {
       "station_code": "V051",
@@ -315,14 +395,18 @@
       "packed": 354,
       "remaining": 7,
       "completion_pct": 0.9806,
-      "last10_lph": 16.799999999999997,
+      "last10_lph": 15,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 63.599999999999994,
+      "recent_infeed_lph": 61,
       "is_productivity_issue": true,
       "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "issue_type": "productivity",
+      "total_value": 82466,
+      "completed_value": 59962,
+      "pending_value": 22504,
+      "value_completion_pct": 0.7271117793999952
     },
     {
       "station_code": "V052",
@@ -330,14 +414,18 @@
       "packed": 332,
       "remaining": 5,
       "completion_pct": 0.9852,
-      "last10_lph": 13.5,
+      "last10_lph": 14,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 57,
+      "recent_infeed_lph": 50,
       "is_productivity_issue": true,
       "is_infeed_issue": true,
-      "issue_type": "infeed"
+      "issue_type": "infeed",
+      "total_value": 44748,
+      "completed_value": 40955,
+      "pending_value": 3793,
+      "value_completion_pct": 0.9152364351479396
     },
     {
       "station_code": "V053",
@@ -345,14 +433,18 @@
       "packed": 326,
       "remaining": 6,
       "completion_pct": 0.9819,
-      "last10_lph": 24,
+      "last10_lph": 19,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 96,
+      "recent_infeed_lph": 73,
       "is_productivity_issue": true,
       "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "issue_type": "productivity",
+      "total_value": 59327,
+      "completed_value": 47916,
+      "pending_value": 11411,
+      "value_completion_pct": 0.807659244526101
     },
     {
       "station_code": "V054",
@@ -360,43 +452,160 @@
       "packed": 424,
       "remaining": 9,
       "completion_pct": 0.9792000000000001,
-      "last10_lph": 29,
+      "last10_lph": 24,
       "target_lph": 120,
       "starved": false,
       "health_color": "red",
-      "recent_infeed_lph": 114,
+      "recent_infeed_lph": 92.4,
       "is_productivity_issue": true,
       "is_infeed_issue": false,
-      "issue_type": "productivity"
+      "issue_type": "productivity",
+      "total_value": 78829,
+      "completed_value": 69658,
+      "pending_value": 9171,
+      "value_completion_pct": 0.8836595669106547
     }
   ],
   "sbl_stream": {
-    "ema_lph": 59,
-    "last_hour_avg": 59,
-    "slope": -9,
-    "trend": "down",
+    "ema_lph": 76,
+    "last_hour_avg": 76,
+    "slope": 20.5,
+    "trend": "up",
     "health_color": "red"
   },
   "ptl_stream": {
-    "ema_lph": 13,
-    "last_hour_avg": 13,
-    "slope": -0.5,
+    "ema_lph": 71,
+    "last_hour_avg": 71,
+    "slope": 0,
     "trend": "stable",
     "shortfall": true,
-    "shortfall_factor": 0.93,
+    "shortfall_factor": 0.61,
     "health_color": "red"
   },
   "ptl_totals": {
-    "last_hour_lines": 0,
-    "by_station": [],
+    "total_lines": 7508,
+    "last_hour_lines": 207,
+    "by_station": [
+      {
+        "station_code": "V002",
+        "lines_last_hour": 34,
+        "productivity": 81.5
+      },
+      {
+        "station_code": "V010",
+        "lines_last_hour": 29,
+        "productivity": 55.6
+      },
+      {
+        "station_code": "V001",
+        "lines_last_hour": 23,
+        "productivity": 55
+      },
+      {
+        "station_code": "V003",
+        "lines_last_hour": 21,
+        "productivity": 101
+      },
+      {
+        "station_code": "V011",
+        "lines_last_hour": 17,
+        "productivity": 41
+      },
+      {
+        "station_code": "V007",
+        "lines_last_hour": 15,
+        "productivity": 72
+      },
+      {
+        "station_code": "V015",
+        "lines_last_hour": 12,
+        "productivity": 58
+      },
+      {
+        "station_code": "V006",
+        "lines_last_hour": 11,
+        "productivity": 35.333333333333336
+      },
+      {
+        "station_code": "V005",
+        "lines_last_hour": 11,
+        "productivity": 52.5
+      },
+      {
+        "station_code": "V012",
+        "lines_last_hour": 10,
+        "productivity": 48
+      },
+      {
+        "station_code": "V008",
+        "lines_last_hour": 7,
+        "productivity": 22.666666666666668
+      },
+      {
+        "station_code": "V004",
+        "lines_last_hour": 7,
+        "productivity": 33.5
+      },
+      {
+        "station_code": "V009",
+        "lines_last_hour": 5,
+        "productivity": 16.333333333333332
+      },
+      {
+        "station_code": "V013",
+        "lines_last_hour": 3,
+        "productivity": 29
+      },
+      {
+        "station_code": "V016",
+        "lines_last_hour": 2,
+        "productivity": 10
+      }
+    ],
     "leaderboard": {
-      "top": [],
-      "bottom": []
+      "top": [
+        {
+          "station_code": "V002",
+          "lines_last_hour": 34,
+          "productivity": 81.5
+        },
+        {
+          "station_code": "V010",
+          "lines_last_hour": 29,
+          "productivity": 55.6
+        },
+        {
+          "station_code": "V001",
+          "lines_last_hour": 23,
+          "productivity": 55
+        }
+      ],
+      "bottom": [
+        {
+          "station_code": "V009",
+          "lines_last_hour": 5,
+          "productivity": 16.333333333333332
+        },
+        {
+          "station_code": "V013",
+          "lines_last_hour": 3,
+          "productivity": 29
+        },
+        {
+          "station_code": "V016",
+          "lines_last_hour": 2,
+          "productivity": 10
+        }
+      ]
     }
   },
   "trips": [
     {
       "mm_trip": "TR619119640474865664",
+      "total": 876,
+      "sorted": 876,
+      "staged": 876,
+      "loaded": 876,
       "sorted_pct": 1,
       "staged_pct": 1,
       "loaded_pct": 1,
@@ -413,6 +622,10 @@
     },
     {
       "mm_trip": "TR619119640474865665",
+      "total": 439,
+      "sorted": 438,
+      "staged": 438,
+      "loaded": 438,
       "sorted_pct": 1,
       "staged_pct": 1,
       "loaded_pct": 1,
@@ -429,6 +642,10 @@
     },
     {
       "mm_trip": "TR619119682763354112",
+      "total": 557,
+      "sorted": 556,
+      "staged": 556,
+      "loaded": 556,
       "sorted_pct": 1,
       "staged_pct": 1,
       "loaded_pct": 1,
@@ -445,6 +662,10 @@
     },
     {
       "mm_trip": "TR619119692393476096",
+      "total": 555,
+      "sorted": 555,
+      "staged": 555,
+      "loaded": 555,
       "sorted_pct": 1,
       "staged_pct": 1,
       "loaded_pct": 1,
@@ -461,6 +682,10 @@
     },
     {
       "mm_trip": "TR619119692393476097",
+      "total": 302,
+      "sorted": 301,
+      "staged": 301,
+      "loaded": 301,
       "sorted_pct": 1,
       "staged_pct": 1,
       "loaded_pct": 1,
@@ -486,18 +711,299 @@
       "pendingLines": 0
     }
   },
-  "calculation_timestamp": "2025-09-08T02:49:49.661Z",
+  "sbl_infeed": {
+    "skus": [
+      {
+        "sku_code": "PDER1R0-0048",
+        "batch": "01E5004800",
+        "pending_qty": 1,
+        "pending_lines": 1,
+        "hu_available_count": 0,
+        "available_qty": 0,
+        "coverage_pct": 0,
+        "blocked_hu_count": 0,
+        "stale_hu_count": 1,
+        "top_bins": [
+          "V143-D1-L2-B008"
+        ],
+        "top_hus": [],
+        "value_pending": 75,
+        "dq_flags": {
+          "sku_mismatch_on_hu": false,
+          "inactive_bins": false,
+          "blocked_but_needed": false
+        }
+      },
+      {
+        "sku_code": "TRPJ2R0-0720",
+        "batch": "01C5072000",
+        "pending_qty": 60,
+        "pending_lines": 2,
+        "hu_available_count": 1,
+        "available_qty": 30,
+        "coverage_pct": 50,
+        "blocked_hu_count": 0,
+        "stale_hu_count": 1,
+        "top_bins": [
+          "V221-D1-L1-B015"
+        ],
+        "top_hus": [
+          {
+            "hu_code": "VPHUL0950E",
+            "qty": 30,
+            "bin_code": "V221-D1-L1-B015"
+          }
+        ],
+        "value_pending": 240,
+        "dq_flags": {
+          "sku_mismatch_on_hu": false,
+          "inactive_bins": false,
+          "blocked_but_needed": false
+        }
+      },
+      {
+        "sku_code": "NS7CKR0-0048",
+        "batch": "02F5004800",
+        "pending_qty": 12,
+        "pending_lines": 4,
+        "hu_available_count": 1,
+        "available_qty": 12,
+        "coverage_pct": 100,
+        "blocked_hu_count": 0,
+        "stale_hu_count": 1,
+        "top_bins": [
+          "V143-D1-L2-B001"
+        ],
+        "top_hus": [
+          {
+            "hu_code": "VPHUL095KE",
+            "qty": 12,
+            "bin_code": "V143-D1-L2-B001"
+          }
+        ],
+        "value_pending": 780,
+        "dq_flags": {
+          "sku_mismatch_on_hu": false,
+          "inactive_bins": false,
+          "blocked_but_needed": false
+        }
+      },
+      {
+        "sku_code": "PDAN1R8-0036",
+        "batch": "01A5003600",
+        "pending_qty": 2,
+        "pending_lines": 2,
+        "hu_available_count": 1,
+        "available_qty": 2,
+        "coverage_pct": 100,
+        "blocked_hu_count": 0,
+        "stale_hu_count": 1,
+        "top_bins": [
+          "V143-D1-L4-B004"
+        ],
+        "top_hus": [
+          {
+            "hu_code": "VPHUL081Z2",
+            "qty": 2,
+            "bin_code": "V143-D1-L4-B004"
+          }
+        ],
+        "value_pending": 270,
+        "dq_flags": {
+          "sku_mismatch_on_hu": false,
+          "inactive_bins": false,
+          "blocked_but_needed": false
+        }
+      },
+      {
+        "sku_code": "VICC1R1-0270",
+        "batch": "01J4027000",
+        "pending_qty": 8,
+        "pending_lines": 3,
+        "hu_available_count": 1,
+        "available_qty": 8,
+        "coverage_pct": 100,
+        "blocked_hu_count": 0,
+        "stale_hu_count": 1,
+        "top_bins": [
+          "V143-D1-L4-B003"
+        ],
+        "top_hus": [
+          {
+            "hu_code": "VPHUL08023",
+            "qty": 8,
+            "bin_code": "V143-D1-L4-B003"
+          }
+        ],
+        "value_pending": 392,
+        "dq_flags": {
+          "sku_mismatch_on_hu": false,
+          "inactive_bins": false,
+          "blocked_but_needed": false
+        }
+      },
+      {
+        "sku_code": "SUGE2R7-0008",
+        "batch": "01D5000800",
+        "pending_qty": 1,
+        "pending_lines": 1,
+        "hu_available_count": 1,
+        "available_qty": 4,
+        "coverage_pct": 100,
+        "blocked_hu_count": 0,
+        "stale_hu_count": 1,
+        "top_bins": [
+          "V142-D1-L4-B008"
+        ],
+        "top_hus": [
+          {
+            "hu_code": "VPHUL083S8",
+            "qty": 4,
+            "bin_code": "V142-D1-L4-B008"
+          }
+        ],
+        "value_pending": 430,
+        "dq_flags": {
+          "sku_mismatch_on_hu": false,
+          "inactive_bins": false,
+          "blocked_but_needed": false
+        }
+      },
+      {
+        "sku_code": "SSDO2R0-0960",
+        "batch": "01B5096000",
+        "pending_qty": 16,
+        "pending_lines": 2,
+        "hu_available_count": 1,
+        "available_qty": 130,
+        "coverage_pct": 100,
+        "blocked_hu_count": 0,
+        "stale_hu_count": 1,
+        "top_bins": [
+          "V221-D1-L3-B016"
+        ],
+        "top_hus": [
+          {
+            "hu_code": "VPHUL09CZ1",
+            "qty": 130,
+            "bin_code": "V221-D1-L3-B016"
+          }
+        ],
+        "value_pending": 16,
+        "dq_flags": {
+          "sku_mismatch_on_hu": false,
+          "inactive_bins": false,
+          "blocked_but_needed": false
+        }
+      }
+    ],
+    "hus": [
+      {
+        "hu_code": "VPHUL0764H",
+        "sku_code": "PDER1R0-0048",
+        "qty": 2,
+        "bin_code": "V143-D1-L2-B008",
+        "feed_status": "FED",
+        "blocked_status": false,
+        "inclusionStatus": "INCLUDED",
+        "updatedAt": "2025-09-05T12:45:13.804Z",
+        "age_minutes": 4000,
+        "bin_status": "ACTIVE"
+      },
+      {
+        "hu_code": "VPHUL095KE",
+        "sku_code": "NS7CKR0-0048",
+        "qty": 12,
+        "bin_code": "V143-D1-L2-B001",
+        "feed_status": "NOT_FED",
+        "blocked_status": false,
+        "inclusionStatus": "INCLUDED",
+        "updatedAt": "2025-09-04T07:19:23.340Z",
+        "age_minutes": 5766,
+        "bin_status": "ACTIVE"
+      },
+      {
+        "hu_code": "VPHUL081Z2",
+        "sku_code": "PDAN1R8-0036",
+        "qty": 2,
+        "bin_code": "V143-D1-L4-B004",
+        "feed_status": "NOT_FED",
+        "blocked_status": false,
+        "inclusionStatus": "INCLUDED",
+        "updatedAt": "2025-09-04T14:58:49.331Z",
+        "age_minutes": 5307,
+        "bin_status": "ACTIVE"
+      },
+      {
+        "hu_code": "VPHUL08023",
+        "sku_code": "VICC1R1-0270",
+        "qty": 8,
+        "bin_code": "V143-D1-L4-B003",
+        "feed_status": "NOT_FED",
+        "blocked_status": false,
+        "inclusionStatus": "INCLUDED",
+        "updatedAt": "2025-09-04T14:51:22.465Z",
+        "age_minutes": 5314,
+        "bin_status": "ACTIVE"
+      },
+      {
+        "hu_code": "VPHUL0950E",
+        "sku_code": "TRPJ2R0-0720",
+        "qty": 30,
+        "bin_code": "V221-D1-L1-B015",
+        "feed_status": "NOT_FED",
+        "blocked_status": false,
+        "inclusionStatus": "INCLUDED",
+        "updatedAt": "2025-09-05T12:02:15.808Z",
+        "age_minutes": 4043,
+        "bin_status": "ACTIVE"
+      },
+      {
+        "hu_code": "VPHUL083S8",
+        "sku_code": "SUGE2R7-0008",
+        "qty": 4,
+        "bin_code": "V142-D1-L4-B008",
+        "feed_status": "NOT_FED",
+        "blocked_status": false,
+        "inclusionStatus": "INCLUDED",
+        "updatedAt": "2025-09-07T05:16:23.795Z",
+        "age_minutes": 1569,
+        "bin_status": "ACTIVE"
+      },
+      {
+        "hu_code": "VPHUL09CZ1",
+        "sku_code": "SSDO2R0-0960",
+        "qty": 130,
+        "bin_code": "V221-D1-L3-B016",
+        "feed_status": "NOT_FED",
+        "blocked_status": false,
+        "inclusionStatus": "INCLUDED",
+        "updatedAt": "2025-09-05T12:00:58.683Z",
+        "age_minutes": 4045,
+        "bin_status": "ACTIVE"
+      }
+    ],
+    "summary": {
+      "total_skus": 7,
+      "total_hus": 7,
+      "avg_coverage_pct": 78.57,
+      "low_coverage_skus": 1,
+      "blocked_hus": 0,
+      "stale_hus": 7
+    }
+  },
+  "calculation_timestamp": "2025-09-08T07:26:11.786Z",
   "macros": {
     "waveInfo": {
       "wave_id": "1",
-      "start_time_iso": "2025-09-06T12:00:00.000Z",
-      "cutoff_time_iso": "2025-09-06T17:00:00.000Z",
-      "total_orders": 1000,
-      "total_order_lines": 12000,
-      "total_order_value": 1000000,
-      "split_lines_sbl": 5000,
-      "split_lines_ptl": 5000,
-      "split_lines_fc": 3000
+      "start_time_iso": "2025-09-06T12:24:59.999Z",
+      "cutoff_time_iso": "2025-09-08T17:16:24.000Z",
+      "total_orders": 1901,
+      "total_order_lines": 16221,
+      "total_order_value": 2354143,
+      "split_lines_sbl": 8671,
+      "split_lines_ptl": 7550,
+      "split_lines_fc": 667
     },
     "stageTargets": {
       "SBL": {
@@ -538,8 +1044,8 @@
       "starvation_Rmin_factor_of_target": 0.5,
       "ptl_shortfall_min_factor": 0.1
     },
-    "startTime": "2025-09-06T12:00:00.000Z",
-    "cutoffTime": "2025-09-06T17:00:00.000Z",
+    "startTime": "2025-09-06T12:24:59.999Z",
+    "cutoffTime": "2025-09-08T17:16:24.000Z",
     "expectedDuration": {
       "sbl": 2.5,
       "ptl": 2.5,
