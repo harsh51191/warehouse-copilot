@@ -23,7 +23,7 @@ export interface AnalysisResult {
 }
 
 export async function analyseQuery(question: string): Promise<AnalysisResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || (typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') : null);
   
   // Check if question is warehouse-related
   const lowerQuestion = question.toLowerCase();

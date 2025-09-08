@@ -22,6 +22,20 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult[] | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string>('');
+
+  // Handle escape key for modal
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen]);
   const [isMounted, setIsMounted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -288,24 +302,48 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
                         <div>
                           <p className="font-medium text-amber-700 mb-1">Core Files:</p>
                           <ul className="space-y-1 text-amber-600">
-                            <li>• wave_macros (Wave parameters)</li>
-                            <li>• line_completion_2 (SBL completion)</li>
-                            <li>• sbl_productivity (SBL trends)</li>
-                            <li>• ptl_productivity (PTL trends)</li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-green-600">✓</span>
+                              <span>wave_macros (Wave parameters)</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-green-600">✓</span>
+                              <span>line_completion_2 (SBL completion)</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-green-600">✓</span>
+                              <span>sbl_productivity (SBL trends)</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-green-600">✓</span>
+                              <span>ptl_productivity (PTL trends)</span>
+                            </li>
                           </ul>
                         </div>
                         <div>
                           <p className="font-medium text-amber-700 mb-1">Enhanced Analytics:</p>
                           <ul className="space-y-1 text-amber-600">
-                            <li>• updated_loading_dashboard_query (Trip data)</li>
-                            <li>• secondary_sortation (QC data)</li>
-                            <li>• ptl_table_lines (Station data)</li>
-                            <li>• sbl_summary (Station productivity)</li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-green-600">✓</span>
+                              <span>updated_loading_dashboard_query (Trip data)</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-green-600">✓</span>
+                              <span>secondary_sortation (QC data)</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-red-500">✗</span>
+                              <span>ptl_table_lines (Station data) - Missing</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-green-600">✓</span>
+                              <span>sbl_summary (Station productivity)</span>
+                            </li>
                           </ul>
                         </div>
                       </div>
                       <p className="text-amber-600 mt-2">
-                        <strong>Note:</strong> System works with any uploaded files, but more files = better insights!
+                        <strong>Status:</strong> 7/8 files uploaded. Upload <code>ptl_table_lines.xlsx</code> for complete analytics!
                       </p>
                     </div>
                   </div>

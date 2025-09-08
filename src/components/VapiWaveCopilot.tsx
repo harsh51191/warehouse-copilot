@@ -463,6 +463,8 @@ export default function VapiWaveCopilotDual() {
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<any>(null);
+  const [apiKey, setApiKey] = useState('');
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
 
   // Handle escape key for modal
   useEffect(() => {
@@ -1222,6 +1224,50 @@ export default function VapiWaveCopilotDual() {
                   </div>
                 </div>
                 
+                {/* API Key Input for Testing */}
+                {showApiKeyInput && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mx-4 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-medium text-yellow-800">API Key (Testing)</span>
+                      <button 
+                        onClick={() => setShowApiKeyInput(false)}
+                        className="text-yellow-600 hover:text-yellow-800"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <input
+                      type="password"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder="Enter Gemini API Key"
+                      className="w-full px-3 py-2 text-sm border border-yellow-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
+                    <button
+                      onClick={() => {
+                        if (apiKey) {
+                          localStorage.setItem('gemini_api_key', apiKey);
+                          window.location.reload();
+                        }
+                      }}
+                      className="mt-2 px-3 py-1 bg-yellow-600 text-white text-sm rounded-md hover:bg-yellow-700"
+                    >
+                      Set API Key
+                    </button>
+                  </div>
+                )}
+                
+                {!showApiKeyInput && (
+                  <div className="px-4 mb-4">
+                    <button
+                      onClick={() => setShowApiKeyInput(true)}
+                      className="w-full px-3 py-2 text-sm bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200"
+                    >
+                      Set API Key (Testing)
+                    </button>
+                  </div>
+                )}
+
                 {/* Copilot Content - Scrollable */}
                 <div className="flex-1 overflow-hidden">
                   <CopilotPanel 
