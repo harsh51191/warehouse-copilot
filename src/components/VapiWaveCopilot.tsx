@@ -403,9 +403,12 @@ function routeQueryToReply(q:string){
 // ---------- Data Fetching ----------
 async function fetchDashboardArtifacts() {
   try {
+    console.log('Fetching dashboard artifacts...');
     const response = await fetch('/api/analytics/dashboard');
-    if (!response.ok) throw new Error('Failed to fetch dashboard artifacts');
+    console.log('Dashboard response status:', response.status);
+    if (!response.ok) throw new Error(`Failed to fetch dashboard artifacts: ${response.status}`);
     const data = await response.json();
+    console.log('Dashboard data received:', data);
     return data.data || null;
   } catch (error) {
     console.error('Error fetching dashboard artifacts:', error);
@@ -497,6 +500,7 @@ export default function VapiWaveCopilotDual() {
   // Fetch real data on component mount
   useEffect(() => {
     const loadData = async () => {
+      console.log('Loading data on component mount...');
       setIsDataLoading(true);
       try {
         const [artifacts, recs, sblTimeline, ptlTimeline] = await Promise.all([
@@ -505,6 +509,8 @@ export default function VapiWaveCopilotDual() {
           fetchSBLTimeline(),
           fetchPTLTimeline()
         ]);
+        
+        console.log('Data loaded:', { artifacts, recs, sblTimeline, ptlTimeline });
         
         setDashboardArtifacts(artifacts);
         setRecommendations(recs);
@@ -520,7 +526,7 @@ export default function VapiWaveCopilotDual() {
         setIsDataLoading(false);
       }
     };
-    
+
     loadData();
   }, []);
 
