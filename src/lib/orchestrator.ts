@@ -49,18 +49,17 @@ export async function analyseQuery(question: string): Promise<AnalysisResult> {
   // First, try to get analytics-based answer if available
   try {
     console.log('[ORCHESTRATOR] Attempting analytics-based answer for:', question);
-    // Import the analytics functions directly instead of making HTTP requests
-    const { getProcessedMacros } = await import('../server/datasource/macros-adapter');
-    const { ArtifactGenerator } = await import('./analytics/artifact-generator');
     
-    const macros = await getProcessedMacros();
-    if (macros) {
-      console.log('[ORCHESTRATOR] Macros found, generating artifacts...');
-      const generator = new ArtifactGenerator();
-      const artifacts = await generator.generateDashboardArtifacts(macros);
+    // Make API call to get dashboard artifacts
+    const baseUrl = typeof window !== 'undefined' ? '' : process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/analytics/dashboard`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      const artifacts = data.data;
       
       if (artifacts && artifacts.overall_summary) {
-        console.log('[ORCHESTRATOR] Artifacts generated, creating recommendation engine...');
+        console.log('[ORCHESTRATOR] Artifacts found, creating recommendation engine...');
         const recommendationEngine = new RecommendationEngine();
         const factBasedAnswer = recommendationEngine.generateFactBasedAnswer(question, artifacts);
         
@@ -85,7 +84,7 @@ export async function analyseQuery(question: string): Promise<AnalysisResult> {
         console.log('[ORCHESTRATOR] No artifacts or overall_summary found');
       }
     } else {
-      console.log('[ORCHESTRATOR] No macros found');
+      console.log('[ORCHESTRATOR] Dashboard API not available:', response.status);
     }
   } catch (error) {
     console.log('[ORCHESTRATOR] Analytics not available, falling back to LLM:', error);
