@@ -176,7 +176,7 @@ export class RecommendationEngine {
     }
     
     // Handle SBL productivity questions
-    if (lowerQuestion.includes('sbl productivity') && (lowerQuestion.includes('hour') || lowerQuestion.includes('avg'))) {
+    if (lowerQuestion.includes('sbl') && lowerQuestion.includes('productivity')) {
       const emaLPH = artifacts.sbl_stream?.ema_lph || 0;
       const lastHourAvg = artifacts.sbl_stream?.last_hour_avg || 0;
       const targetLPH = STAGE_TARGETS.SBL.target_lph;
