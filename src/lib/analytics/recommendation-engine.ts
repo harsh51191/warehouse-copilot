@@ -131,6 +131,23 @@ export class RecommendationEngine {
   }
 
   generateFactBasedAnswer(question: string, artifacts: DashboardArtifacts): string {
+    const lowerQuestion = question.toLowerCase();
+    
+    // Guardrails - only answer warehouse-related questions
+    const warehouseKeywords = [
+      'sbl', 'ptl', 'wave', 'station', 'productivity', 'loading', 'trip', 'lines', 
+      'completion', 'warehouse', 'picking', 'sorting', 'staging', 'crates', 
+      'skus', 'otif', 'risk', 'buffer', 'capacity', 'shortfall', 'starved',
+      'trend', 'performance', 'issues', 'recommendations', 'status', 'progress',
+      'infeed', 'feeding', 'packed', 'remaining', 'target', 'lph', 'throughput'
+    ];
+    
+    const isWarehouseQuestion = warehouseKeywords.some(keyword => lowerQuestion.includes(keyword));
+    
+    if (!isWarehouseQuestion) {
+      return "I can only answer questions about warehouse operations, SBL/PTL workflows, loading status, productivity, and related metrics. Please ask about warehouse operations like 'What is the SBL productivity?' or 'How is loading going?'";
+    }
+    
     // Try specific handlers first (for common questions)
     const specificAnswer = this.trySpecificHandlers(question, artifacts);
     if (specificAnswer) {
@@ -175,6 +192,16 @@ export class RecommendationEngine {
       return `There are ${activeStations} SBL stations total. ${completedStations} stations are 95%+ complete, ${starvedStations} stations are starved. Average completion: ${Math.round(artifacts.sbl_stations.reduce((sum, s) => sum + s.completion_pct, 0) / activeStations * 100)}%.`;
     }
     
+    // Handle SBL completion percentage questions
+    if (lowerQuestion.includes('sbl') && (lowerQuestion.includes('completion') || lowerQuestion.includes('completion percentage'))) {
+      const sblTotal = artifacts.macros?.waveInfo?.split_lines_sbl || 0;
+      const sblCompleted = artifacts.sbl_stations?.reduce((sum, s) => sum + (s.packed || 0), 0) || 0;
+      const sblRemaining = artifacts.sbl_stations?.reduce((sum, s) => sum + (s.remaining || 0), 0) || 0;
+      const completionPct = sblTotal > 0 ? Math.round((sblCompleted / sblTotal) * 100) : 0;
+      
+      return `SBL completion is ${completionPct}% (${sblCompleted.toLocaleString()} of ${sblTotal.toLocaleString()} lines completed). ${sblRemaining.toLocaleString()} lines remaining.`;
+    }
+    
     // Handle SBL productivity questions
     if (lowerQuestion.includes('sbl') && lowerQuestion.includes('productivity')) {
       const emaLPH = artifacts.sbl_stream?.ema_lph || 0;
@@ -199,6 +226,21 @@ export class RecommendationEngine {
     
     // Handle SBL station productivity ranking questions
     if (lowerQuestion.includes('sbl') && (lowerQuestion.includes('lowest') || lowerQuestion.includes('worst') || lowerQuestion.includes('bottom')) && lowerQuestion.includes('productivity')) {
+      if (artifacts.sbl_stations.length === 0) {
+        return `SBL station data is not available. Please upload the 'line_completion_2.xlsx' and 'sbl_table_lines.xlsx' files to get station productivity information.`;
+      }
+      
+      // Sort stations by productivity (lowest first)
+      const sortedStations = [...artifacts.sbl_stations].sort((a, b) => a.last10_lph - b.last10_lph);
+      const lowestStation = sortedStations[0];
+      const targetLPH = STAGE_TARGETS.SBL.target_lph;
+      const performancePct = Math.round((lowestStation.last10_lph / targetLPH) * 100);
+      
+      return `The station with the lowest productivity in SBL is ${lowestStation.station_code} at ${lowestStation.last10_lph} LPH (${performancePct}% of target). This station has ${lowestStation.remaining} lines remaining and is ${lowestStation.issue_type === 'infeed' ? 'experiencing infeed issues' : lowestStation.issue_type === 'productivity' ? 'experiencing productivity issues' : 'performing normally'}.`;
+    }
+    
+    // Handle SBL station questions (more general)
+    if (lowerQuestion.includes('sbl station') && (lowerQuestion.includes('lowest') || lowerQuestion.includes('worst') || lowerQuestion.includes('bottom'))) {
       if (artifacts.sbl_stations.length === 0) {
         return `SBL station data is not available. Please upload the 'line_completion_2.xlsx' and 'sbl_table_lines.xlsx' files to get station productivity information.`;
       }
