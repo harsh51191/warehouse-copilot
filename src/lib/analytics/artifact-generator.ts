@@ -10,7 +10,10 @@ export class ArtifactGenerator {
   private logger: AnalyticsLogger;
 
   constructor() {
-    this.derivedDir = join(process.cwd(), 'data', 'derived');
+    // Use /tmp for Vercel compatibility in production
+    this.derivedDir = process.env.NODE_ENV === 'production' 
+      ? '/tmp/data/derived' 
+      : join(process.cwd(), 'data', 'derived');
     this.logger = new AnalyticsLogger();
   }
 
@@ -391,6 +394,13 @@ export class ArtifactGenerator {
   }
 
   private async saveArtifacts(artifacts: DashboardArtifacts): Promise<void> {
+    // Ensure derived directory exists
+    try {
+      await mkdir(this.derivedDir, { recursive: true });
+    } catch (error) {
+      console.warn('Could not create derived directory:', error);
+    }
+
     const files = [
       { name: 'overall_summary.json', data: artifacts.overall_summary },
       { name: 'sbl_stations.json', data: artifacts.sbl_stations },
