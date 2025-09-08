@@ -1,19 +1,22 @@
 'use client'
 
 import React, { useMemo, useState, useEffect } from "react";
-import { AlertTriangle, CheckCircle2, Clock, Activity, Layers, Truck, Bot, Info, Sparkles, SlidersHorizontal, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Activity, Layers, Truck, Bot, Info, Sparkles, SlidersHorizontal, Loader2, TrendingDown, CheckCircle, Users, Package, X } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend } from "recharts";
 import ExcelUpload from "./ExcelUpload";
 
 /**
- * Vapi Wave Copilot – Two UX Variants in one file:
- * 1) HYBRID COPILOT: Key UI fixed on the left, conversational panel on the right.
- * 2) THREE-PANEL: Funnel (left) · Bottleneck & Prescription (center) · Co-Pilot (right)
+ * Vapi Wave Copilot – Unified 3-Panel Layout:
+ * Left: Wave Progress Funnel & Drum-Buffer-Rope
+ * Middle: Comprehensive Analytics (Wave Header, AI Recommendations, Productivity Trends, Conveyor FEED, Trip Progress)
+ * Right: Fixed Chat Panel (Copilot)
  *
- * Notes:
- * - Mock data only; writes disabled.
- * - Color semantics: green (good), amber (watch), red (risk).
- * - Chat queries update left/center UI (simulate DSS behavior).
+ * Features:
+ * - Real-time data from Excel uploads
+ * - AI-powered recommendations and Q&A
+ * - Dynamic UI highlighting based on chat queries
+ * - Color semantics: green (good), amber (watch), red (risk)
+ * - Hybrid system: specific handlers + LLM fallback for flexible responses
  */
 
 // ---------- Mock Data (HUL Vapi – Wave 3) ----------
@@ -202,9 +205,36 @@ function Prescription({title, deltas, onApply, variant}:{title:string; deltas:{l
   )
 }
 
+function RecommendationCard({recommendation, componentId, uiHighlights}:{recommendation:any; componentId?: string; uiHighlights?: string[]}){
+  const highlightClass = componentId ? getHighlightClass(componentId, uiHighlights || []) : '';
+  const priorityColor = recommendation.priority === 'HIGH' ? 'border-red-200 bg-red-50' : 
+                       recommendation.priority === 'MEDIUM' ? 'border-amber-200 bg-amber-50' : 
+                       'border-blue-200 bg-blue-50';
+  
+  return (
+    <div className={`rounded-2xl border p-4 shadow-sm ${priorityColor} ${highlightClass}`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="font-medium text-sm">{recommendation.title}</div>
+        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+          recommendation.priority === 'HIGH' ? 'bg-red-100 text-red-800' :
+          recommendation.priority === 'MEDIUM' ? 'bg-amber-100 text-amber-800' :
+          'bg-blue-100 text-blue-800'
+        }`}>
+          {recommendation.priority}
+        </div>
+      </div>
+      <div className="text-xs text-slate-600 mb-2">{recommendation.rationale}</div>
+      <div className="text-xs font-medium text-slate-700 mb-2">Impact: {recommendation.impact_estimate}</div>
+      <div className="text-xs text-slate-500">
+        Confidence: {Math.round(recommendation.confidence * 100)}%
+      </div>
+    </div>
+  )
+}
+
 function CopilotPanel({onQuery}:{onQuery:(q:string, uiPatch?:any)=>void}){
   const [messages, setMessages] = useState<any[]>([
-    { role: "ai", text: "Hi! Ask about Wave 3, or tap a suggestion below."},
+    { role: "ai", text: "Hi! Ask about your SBL, PTL waves, or tap a suggestion below."},
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -368,6 +398,30 @@ function routeQueryToReply(q:string){
 }
 
 // ---------- Data Fetching ----------
+async function fetchDashboardArtifacts() {
+  try {
+    const response = await fetch('/api/analytics/dashboard');
+    if (!response.ok) throw new Error('Failed to fetch dashboard artifacts');
+    const data = await response.json();
+    return data.data || null;
+  } catch (error) {
+    console.error('Error fetching dashboard artifacts:', error);
+    return null;
+  }
+}
+
+async function fetchRecommendations() {
+  try {
+    const response = await fetch('/api/analytics/recommendations');
+    if (!response.ok) throw new Error('Failed to fetch recommendations');
+    const data = await response.json();
+    return data.data?.recommendations || [];
+  } catch (error) {
+    console.error('Error fetching recommendations:', error);
+    return [];
+  }
+}
+
 async function fetchSBLTimeline() {
   try {
     const response = await fetch('/api/metrics/sbl-timeline');
@@ -402,20 +456,42 @@ function transformTimelineToChart(timeline: any[]) {
 
 // ---------- Main Component ----------
 export default function VapiWaveCopilotDual() {
-  const [mode, setMode] = useState<'HYBRID'|'THREEPANEL'>('HYBRID');
   const [state, setState] = useState(makeInitialState());
   const [uiHighlights, setUiHighlights] = useState<string[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const [dashboardArtifacts, setDashboardArtifacts] = useState<any>(null);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState<any>(null);
+
+  // Handle escape key for modal
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && modalOpen) {
+        setModalOpen(false);
+      }
+    };
+
+    if (modalOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [modalOpen]);
 
   // Fetch real data on component mount
   useEffect(() => {
     const loadData = async () => {
       setIsDataLoading(true);
       try {
-        const [sblTimeline, ptlTimeline] = await Promise.all([
+        const [artifacts, recs, sblTimeline, ptlTimeline] = await Promise.all([
+          fetchDashboardArtifacts(),
+          fetchRecommendations(),
           fetchSBLTimeline(),
           fetchPTLTimeline()
         ]);
+        
+        setDashboardArtifacts(artifacts);
+        setRecommendations(recs);
         
         setState(prev => ({
           ...prev,
@@ -517,115 +593,645 @@ export default function VapiWaveCopilotDual() {
   const sblTrend = <Trend data={isDataLoading ? [] : state.sblBuckets} label="SBL · lines/10 min (per station)" highlight={state.highlight==='SBL'} componentId="SBLTrend" uiHighlights={uiHighlights} isLoading={isDataLoading} />;
   const ptlTrend = <Trend data={isDataLoading ? [] : state.ptlBuckets} label="PTL · lines/10 min (per station)" highlight={state.highlight==='PTL'} componentId="PTLTrend" uiHighlights={uiHighlights} isLoading={isDataLoading} />;
 
-  const Hybrid = (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <section className="lg:col-span-2 space-y-4">
-        {WaveHeader}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Prescription title="Option A · Prioritise OTIF (move 12 low-value lines)" deltas={deltasOTIF} onApply={applyOTIF} variant="otif"/>
-          <Prescription title="Option B · Prioritise In-Full (hold for replen/QC)" deltas={deltasInFull} onApply={applyInFull} variant="infull"/>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {sblTrend}
-          {ptlTrend}
-        </div>
-        <div className={`rounded-2xl border p-4 bg-white shadow-sm ${state.highlight==='FUNNEL'? 'ring-2 ring-amber-300':''}`}>
-          <div className="font-medium mb-2 flex items-center gap-2"><Activity size={16}/> Conveyor FEED throughput</div>
-          <div className="h-36">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={state.conveyorBuckets} margin={{left:8, right:8, top:10, bottom:0}}>
-                <defs>
-                  <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0f172a" stopOpacity={0.25}/>
-                    <stop offset="95%" stopColor="#0f172a" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="t" tick={{fontSize:12}}/>
-                <YAxis tick={{fontSize:12}}/>
-                <Tooltip />
-                <Area type="monotone" dataKey="cartons" stroke="#0f172a" fillOpacity={1} fill="url(#g1)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="text-xs text-slate-500 mt-2">Drop at 14:20 suggests staging starvation.</div>
-        </div>
-        <Funnel trips={state.trips} highlight={state.highlight==='FUNNEL'} componentId="TripsGrid" uiHighlights={uiHighlights} />
-      </section>
-      <div className="lg:col-span-1">
-        {/* Spacer for fixed chat panel */}
-      </div>
-    </div>
-  );
-
-  const ThreePanel = (
+  // Unified 3-Panel Layout
+  const UnifiedThreePanel = (
     <div className="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      {/* Left Panel: Wave Summary & Progress Funnel */}
       <div className="lg:col-span-1">
-        <div className="rounded-2xl border p-4 bg-white shadow-sm">
-          <div className="font-semibold mb-2 flex items-center gap-2"><Layers size={16}/> Wave Progress Funnel</div>
-          <div className="space-y-3">
-            {[
-              {label:'Allocated', val:1500, tone:'good'},
-              {label:'Picking Started', val:1250, tone:'warn'},
-              {label:'Picked (SBL/PTL/Case)', val:900, tone:'warn'},
-              {label:'Packed/Closed', val:750, tone:'warn'},
-              {label:'Staged for Dispatch', val:400, tone:'bad'},
-            ].map((r)=> (
-              <div key={r.label} className="">
-                <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="font-medium">{r.label}</span>
-                  <Badge tone={r.tone as any}>{r.tone==='good'? 'Green':'Amber'}</Badge>
+        {/* Wave Summary */}
+        <div className={`rounded-2xl border p-4 bg-white shadow-sm ${getHighlightClass('WaveSummary', uiHighlights)}`}>
+          <div className="font-semibold mb-3 flex items-center gap-2"><Activity size={16}/> Wave Summary</div>
+          {dashboardArtifacts ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="text-center p-2 bg-slate-50 rounded-lg">
+                  <div className="text-xs text-slate-500">Wave ID</div>
+                  <div className="font-semibold">{dashboardArtifacts.macros?.waveInfo?.wave_id || 'N/A'}</div>
                 </div>
-                <Progress value={Math.min(100, (r.val/1500)*100)} />
-                <div className="text-xs text-slate-500 mt-1">{r.val} Lines</div>
+                <div className="text-center p-2 bg-slate-50 rounded-lg">
+                  <div className="text-xs text-slate-500">Total Lines</div>
+                  <div className="font-semibold">{dashboardArtifacts.macros?.waveInfo?.total_order_lines || 0}</div>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-        <div className="rounded-2xl border p-4 bg-white shadow-sm mt-4">
-          <div className="font-medium mb-1">Drum-Buffer-Rope</div>
-          <ul className="text-sm text-slate-700 list-disc pl-5 space-y-1">
-            <li><b>Drum:</b> PTL packing (constraint)</li>
-            <li><b>Buffer:</b> 45 min deficit vs 15:30 cutoff</li>
-            <li><b>Rope:</b> Pace SBL to match PTL; avoid overfeeding QC</li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="lg:col-span-2 xl:col-span-3 space-y-4">
-        {WaveHeader}
-        <div className={`rounded-2xl border p-4 bg-white shadow-sm ${state.highlight==='BOTTLENECK'? 'ring-2 ring-rose-300':''}`}>
-          {minutesLate>0 ? (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-lg font-semibold text-rose-700 flex itemscenter gap-2"><AlertTriangle size={18}/> ALERT: OTIF AT RISK</div>
-                <Badge tone={'bad'}>Late by {minutesLate} min</Badge>
+              <div className="text-center p-2 bg-slate-50 rounded-lg">
+                <div className="text-xs text-slate-500">Projected Finish</div>
+                <div className="font-semibold text-lg">
+                  {dashboardArtifacts.overall_summary?.projected_finish_iso 
+                    ? new Date(dashboardArtifacts.overall_summary.projected_finish_iso).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+                    : 'N/A'
+                  }
+                </div>
+                <div className="text-xs text-slate-500">
+                  {dashboardArtifacts.overall_summary?.buffer_minutes 
+                    ? `${dashboardArtifacts.overall_summary.buffer_minutes > 0 ? '+' : ''}${dashboardArtifacts.overall_summary.buffer_minutes} min`
+                    : 'N/A'
+                  }
+                </div>
               </div>
-              <div className="text-sm text-slate-700 mb-3">Bottleneck is <b>PTL Picking</b> — productivity is {Math.round((state.prod.ptl.current/state.prod.ptl.target-1)*100)}% below target; projecting delay to wave.</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Prescription title="Option A · Prioritise Order Value (OTIF)" deltas={deltasOTIF} onApply={applyOTIF} variant="otif"/>
-                <Prescription title="Option B · Prioritise Line Fill (In-Full)" deltas={deltasInFull} onApply={applyInFull} variant="infull"/>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="text-center p-2 bg-slate-50 rounded-lg">
+                  <div className="text-xs text-slate-500">SBL Coverage</div>
+                  <div className="font-semibold">
+                    {dashboardArtifacts.overall_summary?.sbl_coverage_pct 
+                      ? `${Math.round(dashboardArtifacts.overall_summary.sbl_coverage_pct * 100)}%`
+                      : 'N/A'
+                    }
+                  </div>
+                </div>
+                <div className="text-center p-2 bg-slate-50 rounded-lg">
+                  <div className="text-xs text-slate-500">PTL Coverage</div>
+                  <div className="font-semibold">
+                    {dashboardArtifacts.overall_summary?.ptl_coverage_pct 
+                      ? `${Math.round(dashboardArtifacts.overall_summary.ptl_coverage_pct * 100)}%`
+                      : 'N/A'
+                    }
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="text-lg font-semibold text-emerald-700 flex items-center gap-2"><CheckCircle2 size={18}/> Wave {state.waveId} is ON TRACK</div>
-                <Badge tone={'good'}>Ahead of cutoff</Badge>
-              </div>
-              <div className="text-sm text-slate-700 mt-2">Projected completion {fmtTime(state.projectedFinish)} (ahead). Opportunity: Picker #12 highly efficient; consider assigning complex orders in next wave.</div>
+            <div className="text-center text-slate-500 py-4">
+              <div className="text-sm">No data available</div>
+              <div className="text-xs">Upload Excel files to see summary</div>
             </div>
           )}
         </div>
+
+        {/* Wave Progress Funnel - Simplified */}
+        <div className="rounded-2xl border p-4 bg-white shadow-sm mt-4">
+          <div className="font-semibold mb-4 flex items-center gap-2"><Layers size={16}/> Wave Progress Funnel</div>
+          
+          <div className="space-y-4">
+            {/* SBL Progress */}
+            <div>
+              <div className="text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                SBL Operations
+              </div>
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="font-medium">SBL Progress</span>
+                <Badge tone={
+                  (dashboardArtifacts?.sbl_stations?.reduce((sum: number, station: any) => sum + station.packed, 0) || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_sbl || 1) > 0.9 ? 'good' : 
+                  (dashboardArtifacts?.sbl_stations?.reduce((sum: number, station: any) => sum + station.packed, 0) || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_sbl || 1) > 0.7 ? 'warn' : 'bad'
+                }>
+                  {Math.round((dashboardArtifacts?.sbl_stations?.reduce((sum: number, station: any) => sum + station.packed, 0) || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_sbl || 1) * 100)}%
+                </Badge>
+              </div>
+              <Progress value={Math.min(100, ((dashboardArtifacts?.sbl_stations?.reduce((sum: number, station: any) => sum + station.packed, 0) || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_sbl || 1)) * 100)} />
+              <div className="text-xs text-slate-500 mt-1">
+                {dashboardArtifacts?.sbl_stations?.reduce((sum: number, station: any) => sum + station.packed, 0) || 0} / {dashboardArtifacts?.macros?.waveInfo?.split_lines_sbl || 0} Lines
+              </div>
+            </div>
+
+            {/* PTL Progress */}
+            <div>
+              <div className="text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                PTL Operations
+              </div>
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="font-medium">PTL Progress</span>
+                <Badge tone={
+                  (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 0) === 0 ? 'warn' :
+                  (dashboardArtifacts?.ptl_totals?.last_hour_lines || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 1) > 0.9 ? 'good' : 
+                  (dashboardArtifacts?.ptl_totals?.last_hour_lines || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 1) > 0.7 ? 'warn' : 'bad'
+                }>
+                  {(dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 0) === 0 ? 'Not Started' :
+                   Math.round(((dashboardArtifacts?.ptl_totals?.last_hour_lines || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 1)) * 100) + '%'}
+                </Badge>
+              </div>
+              <Progress value={
+                (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 0) === 0 ? 0 :
+                Math.min(100, ((dashboardArtifacts?.ptl_totals?.last_hour_lines || 0) / (dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 1)) * 100)
+              } />
+              <div className="text-xs text-slate-500 mt-1">
+                {dashboardArtifacts?.ptl_totals?.last_hour_lines || 0} / {dashboardArtifacts?.macros?.waveInfo?.split_lines_ptl || 0} Lines
+              </div>
+            </div>
+
+            {/* Loading Progress */}
+            <div>
+              <div className="text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                Loading Operations
+              </div>
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="font-medium">Loading Progress</span>
+                <Badge tone={
+                  (dashboardArtifacts?.trips?.reduce((sum: number, trip: any) => sum + ((trip as any).total || 0), 0) || 0) === 0 ? 'warn' :
+                  dashboardArtifacts?.trips?.reduce((sum: number, trip: any) => sum + trip.loaded_pct, 0) / (dashboardArtifacts?.trips?.length || 1) > 0.9 ? 'good' : 
+                  dashboardArtifacts?.trips?.reduce((sum: number, trip: any) => sum + trip.loaded_pct, 0) / (dashboardArtifacts?.trips?.length || 1) > 0.7 ? 'warn' : 'bad'
+                }>
+                  {(dashboardArtifacts?.trips?.reduce((sum: number, trip: any) => sum + ((trip as any).total || 0), 0) || 0) === 0 ? 'Not Started' :
+                   Math.round((dashboardArtifacts?.trips?.reduce((sum: number, trip: any) => sum + trip.loaded_pct, 0) || 0) / (dashboardArtifacts?.trips?.length || 1) * 100) + '%'}
+                </Badge>
+              </div>
+              <Progress value={
+                (dashboardArtifacts?.trips?.reduce((sum: number, trip: any) => sum + ((trip as any).total || 0), 0) || 0) === 0 ? 0 :
+                Math.min(100, ((dashboardArtifacts?.trips?.reduce((sum: number, trip: any) => sum + trip.loaded_pct, 0) || 0) / (dashboardArtifacts?.trips?.length || 1)) * 100)
+              } />
+              <div className="text-xs text-slate-500 mt-1">
+                {dashboardArtifacts?.trips?.reduce((sum: number, trip: any) => sum + Math.round(trip.loaded_pct * ((trip as any).total || 0)), 0) || 0} / {dashboardArtifacts?.trips?.reduce((sum: number, trip: any) => sum + ((trip as any).total || 0), 0) || 0} Crates
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Middle Panel: Insights & Analytics */}
+      <div className="lg:col-span-2 xl:col-span-3 space-y-4">
+        {/* Key Metrics & Issue Summary - Enhanced UX */}
+        {dashboardArtifacts && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Key Metrics - Enhanced Design */}
+            <div className="lg:col-span-2 rounded-2xl border-2 border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-lg">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Activity size={20} className="text-blue-600"/>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800">Key Performance Metrics</h3>
+                    <p className="text-sm text-slate-500">Real-time operational insights</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {/* Line Coverage */}
+                  <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">Line Coverage</span>
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-800">
+                      {Math.round((dashboardArtifacts.overall_summary?.line_coverage_pct || 0) * 100)}%
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">Overall progress</div>
+                  </div>
+
+                  {/* SBL Productivity */}
+                  <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">SBL Rate</span>
+                      <TrendingDown size={14} className="text-red-500"/>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-800">
+                      {dashboardArtifacts.sbl_stream?.ema_lph || 0}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">Lines per hour</div>
+                  </div>
+
+                  {/* PTL Productivity */}
+                  <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">PTL Rate</span>
+                      <TrendingDown size={14} className="text-red-500"/>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-800">
+                      {dashboardArtifacts.ptl_stream?.ema_lph || 0}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">Lines per hour</div>
+                  </div>
+
+                  {/* SBL Completion */}
+                  <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">SBL Done</span>
+                      <CheckCircle size={14} className="text-green-500"/>
+                    </div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {dashboardArtifacts.sbl_stations?.length > 0 
+                        ? Math.round((dashboardArtifacts.sbl_stations.reduce((sum: number, s: any) => sum + s.completion_pct, 0) / dashboardArtifacts.sbl_stations.length) * 100)
+                        : 0}%
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">Completion rate</div>
+                  </div>
+
+                  {/* Active Stations */}
+                  <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">Stations</span>
+                      <Users size={14} className="text-blue-500"/>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-800">
+                      {dashboardArtifacts.sbl_stations?.length || 0}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">Active SBL</div>
+                  </div>
+
+                  {/* Active Trips */}
+                  <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">Trips</span>
+                      <Truck size={14} className="text-purple-500"/>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-800">
+                      {dashboardArtifacts.trips?.length || 0}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">In progress</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Issue Summary - Enhanced Design with Actions */}
+            {dashboardArtifacts.sbl_stations && (
+              <div className="rounded-2xl border-2 border-red-200 bg-gradient-to-br from-red-50 to-white shadow-lg">
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-red-100 rounded-lg">
+                      <AlertTriangle size={20} className="text-red-600"/>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-800">Issue Summary</h3>
+                      <p className="text-sm text-slate-500">Station health status</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {/* Productivity Issues - Clickable */}
+                    <div 
+                      className="bg-white rounded-xl p-4 border border-red-200 cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => {
+                        const productivityIssues = dashboardArtifacts.sbl_stations.filter((s: any) => s.is_productivity_issue);
+                        setModalContent({
+                          title: 'Productivity Issues',
+                          type: 'productivity',
+                          count: productivityIssues.length,
+                          stations: productivityIssues.map((s: any) => ({
+                            station_code: s.station_code,
+                            productivity: Math.round(s.last10_lph),
+                            target: s.target_lph,
+                            performance_pct: Math.round((s.last10_lph/s.target_lph)*100),
+                            remaining: s.remaining
+                          }))
+                        });
+                        setModalOpen(true);
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                          <span className="text-sm font-medium text-slate-700">Productivity Issues</span>
+                        </div>
+                        <span className="text-2xl font-bold text-red-600">
+                          {dashboardArtifacts.sbl_stations.filter((s: any) => s.is_productivity_issue).length}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Infeed Issues - Clickable */}
+                    <div 
+                      className="bg-white rounded-xl p-4 border border-orange-200 cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => {
+                        const infeedIssues = dashboardArtifacts.sbl_stations.filter((s: any) => s.is_infeed_issue);
+                        setModalContent({
+                          title: 'Infeed Issues',
+                          type: 'infeed',
+                          count: infeedIssues.length,
+                          stations: infeedIssues.map((s: any) => ({
+                            station_code: s.station_code,
+                            infeed_rate: Math.round(s.recent_infeed_lph || 0),
+                            productivity: Math.round(s.last10_lph),
+                            remaining: s.remaining
+                          }))
+                        });
+                        setModalOpen(true);
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                          <span className="text-sm font-medium text-slate-700">Infeed Issues</span>
+                        </div>
+                        <span className="text-2xl font-bold text-orange-600">
+                          {dashboardArtifacts.sbl_stations.filter((s: any) => s.is_infeed_issue).length}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Healthy Stations - Clickable */}
+                    <div 
+                      className="bg-white rounded-xl p-4 border border-green-200 cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => {
+                        const healthyStations = dashboardArtifacts.sbl_stations.filter((s: any) => s.issue_type === 'none');
+                        setModalContent({
+                          title: 'Healthy Stations',
+                          type: 'healthy',
+                          count: healthyStations.length,
+                          stations: healthyStations.map((s: any) => ({
+                            station_code: s.station_code,
+                            productivity: Math.round(s.last10_lph),
+                            target: s.target_lph,
+                            performance_pct: Math.round((s.last10_lph/s.target_lph)*100),
+                            remaining: s.remaining
+                          }))
+                        });
+                        setModalOpen(true);
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                          <span className="text-sm font-medium text-slate-700">Healthy Stations</span>
+                        </div>
+                        <span className="text-2xl font-bold text-green-600">
+                          {dashboardArtifacts.sbl_stations.filter((s: any) => s.issue_type === 'none').length}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* AI Recommendations Panel */}
+        {recommendations.length > 0 && (
+          <div className={`rounded-2xl border p-4 bg-white shadow-sm ${getHighlightClass('RecommendationsPanel', uiHighlights)}`}>
+            <div className="font-medium mb-3 flex items-center gap-2"><Sparkles size={16}/> AI Recommendations</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {recommendations.slice(0, 4).map((rec, idx) => (
+                <RecommendationCard 
+                  key={rec.id} 
+                  recommendation={rec} 
+                  componentId={`Recommendation_${idx}`}
+                  uiHighlights={uiHighlights}
+                />
+              ))}
+            </div>
+            {recommendations.length > 4 && (
+              <div className="text-xs text-slate-500 mt-2">
+                +{recommendations.length - 4} more recommendations available
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Productivity Trends with Real Data */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {sblTrend}
           {ptlTrend}
         </div>
+        
+        {/* Station Performance - SBL & PTL */}
+        {dashboardArtifacts?.sbl_stations && (
+          <div className={`rounded-2xl border p-4 bg-white shadow-sm ${getHighlightClass('SBLStations', uiHighlights)}`}>
+            <div className="font-medium mb-3 flex items-center gap-2"><Activity size={16}/> Station Performance</div>
+            
+            {/* SBL Stations - Top 3 */}
+            <div className="mb-4">
+              <div className="text-sm font-medium text-slate-700 mb-2">SBL - Top 3 by Productivity</div>
+              <div className="grid grid-cols-3 gap-2">
+                {dashboardArtifacts.sbl_stations
+                  .sort((a: any, b: any) => b.last10_lph - a.last10_lph)
+                  .slice(0, 3)
+                  .map((station: any) => (
+                  <div key={station.station_code} className={`p-3 rounded-lg border text-center ${
+                    station.health_color === 'green' ? 'bg-green-50 border-green-200' :
+                    station.health_color === 'amber' ? 'bg-amber-50 border-amber-200' :
+                    'bg-red-50 border-red-200'
+                  }`}>
+                    <div className="text-sm font-medium">{station.station_code}</div>
+                    <div className="text-sm text-slate-600">{Math.round(station.last10_lph)} LPH</div>
+                    <div className="text-sm text-slate-500">{Math.round(station.completion_pct * 100)}%</div>
+                    {station.issue_type !== 'none' && (
+                      <div className={`text-xs px-1 rounded mt-1 ${
+                        station.issue_type === 'infeed' ? 'bg-orange-100 text-orange-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {station.issue_type}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* SBL Stations - Bottom 3 */}
+            <div className="mb-4">
+              <div className="text-sm font-medium text-slate-700 mb-2">SBL - Bottom 3 by Productivity</div>
+              <div className="grid grid-cols-3 gap-2">
+                {dashboardArtifacts.sbl_stations
+                  .sort((a: any, b: any) => a.last10_lph - b.last10_lph)
+                  .slice(0, 3)
+                  .map((station: any) => (
+                  <div key={station.station_code} className={`p-3 rounded-lg border text-center ${
+                    station.health_color === 'green' ? 'bg-green-50 border-green-200' :
+                    station.health_color === 'amber' ? 'bg-amber-50 border-amber-200' :
+                    'bg-red-50 border-red-200'
+                  }`}>
+                    <div className="text-sm font-medium">{station.station_code}</div>
+                    <div className="text-sm text-slate-600">{Math.round(station.last10_lph)} LPH</div>
+                    <div className="text-sm text-slate-500">{Math.round(station.completion_pct * 100)}%</div>
+                    {station.issue_type !== 'none' && (
+                      <div className={`text-xs px-1 rounded mt-1 ${
+                        station.issue_type === 'infeed' ? 'bg-orange-100 text-orange-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {station.issue_type}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* PTL Stations - if available */}
+            {dashboardArtifacts?.ptl_totals?.by_station && dashboardArtifacts.ptl_totals.by_station.length > 0 && (
+              <div>
+                <div className="text-sm font-medium text-slate-700 mb-2">PTL - Top 3 by Output</div>
+                <div className="grid grid-cols-3 gap-2">
+                  {dashboardArtifacts.ptl_totals.by_station
+                    .sort((a: any, b: any) => b.lines_last_hour - a.lines_last_hour)
+                    .slice(0, 3)
+                    .map((station: any) => (
+                    <div key={station.station_code} className="p-3 rounded-lg border text-center bg-blue-50 border-blue-200">
+                      <div className="text-sm font-medium">{station.station_code}</div>
+                      <div className="text-sm text-slate-600">{station.lines_last_hour} lines</div>
+                      <div className="text-sm text-slate-500">{Math.round(station.productivity)} LPH</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Loading Status - Crates & Cases */}
+        {dashboardArtifacts?.trips && (
+          <div className={`rounded-2xl border p-4 bg-white shadow-sm ${getHighlightClass('LoadingStatus', uiHighlights)}`}>
+            <div className="font-medium mb-3 flex items-center gap-2"><Truck size={16}/> Loading Status</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Total Crates */}
+              <div className="text-center p-3 bg-slate-50 rounded-lg">
+                <div className="text-sm text-slate-600 mb-1">Total Crates</div>
+                <div className="text-2xl font-bold text-slate-800">
+                  {dashboardArtifacts.trips.reduce((sum: number, trip: any) => sum + (trip.total || 0), 0)}
+                </div>
+                <div className="text-xs text-slate-500">Across all trips</div>
+              </div>
+              
+              {/* Sorted Crates */}
+              <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <div className="text-sm text-blue-600 mb-1">Sorted</div>
+                <div className="text-2xl font-bold text-blue-800">
+                  {Math.round(dashboardArtifacts.trips.reduce((sum: number, trip: any) => sum + (trip.sorted_pct * (trip.total || 0)), 0))}
+                </div>
+                <div className="text-xs text-blue-500">
+                  {Math.round(dashboardArtifacts.trips.reduce((sum: number, trip: any) => sum + trip.sorted_pct, 0) / dashboardArtifacts.trips.length * 100)}% avg
+                </div>
+              </div>
+              
+              {/* Loaded Crates */}
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <div className="text-sm text-green-600 mb-1">Loaded</div>
+                <div className="text-2xl font-bold text-green-800">
+                  {Math.round(dashboardArtifacts.trips.reduce((sum: number, trip: any) => sum + (trip.loaded_pct * (trip.total || 0)), 0))}
+                </div>
+                <div className="text-xs text-green-500">
+                  {Math.round(dashboardArtifacts.trips.reduce((sum: number, trip: any) => sum + trip.loaded_pct, 0) / dashboardArtifacts.trips.length * 100)}% avg
+                </div>
+              </div>
+            </div>
+            
+            {/* Trip-wise breakdown */}
+            <div className="mt-4">
+              <div className="text-sm font-medium text-slate-700 mb-2">Trip-wise Progress</div>
+              <div className="space-y-2">
+                {dashboardArtifacts.trips.slice(0, 5).map((trip: any) => (
+                  <div key={trip.mm_trip} className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                    <div className="text-xs font-mono">{trip.mm_trip.slice(-8)}</div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <span className="text-blue-600">{Math.round(trip.sorted_pct * 100)}% sorted</span>
+                      <span className="text-green-600">{Math.round(trip.loaded_pct * 100)}% loaded</span>
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        trip.health_color === 'green' ? 'bg-green-100 text-green-800' :
+                        trip.health_color === 'amber' ? 'bg-amber-100 text-amber-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {trip.health_color}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {dashboardArtifacts.trips.length > 5 && (
+                  <div className="text-xs text-slate-500 text-center">
+                    +{dashboardArtifacts.trips.length - 5} more trips
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SBL SKUs Status */}
+        {dashboardArtifacts?.sbl_skus && dashboardArtifacts.sbl_skus.skus && dashboardArtifacts.sbl_skus.skus.length > 0 && (
+          <div className={`rounded-2xl border p-4 bg-white shadow-sm ${getHighlightClass('SBLSKUs', uiHighlights)}`}>
+            <div className="font-medium mb-3 flex items-center gap-2"><Package size={16}/> SBL SKUs Status</div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              {/* Total SKUs */}
+              <div className="text-center p-3 bg-slate-50 rounded-lg">
+                <div className="text-sm text-slate-600 mb-1">Total SKUs</div>
+                <div className="text-2xl font-bold text-slate-800">
+                  {dashboardArtifacts.sbl_skus.summary.totalSKUs}
+                </div>
+                <div className="text-xs text-slate-500">Assigned to SBL</div>
+              </div>
+              
+              {/* Pending SKUs */}
+              <div className="text-center p-3 bg-orange-50 rounded-lg">
+                <div className="text-sm text-orange-600 mb-1">Pending</div>
+                <div className="text-2xl font-bold text-orange-800">
+                  {dashboardArtifacts.sbl_skus.summary.pendingSKUs}
+                </div>
+                <div className="text-xs text-orange-500">Need feeding</div>
+              </div>
+              
+              {/* Completed SKUs */}
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <div className="text-sm text-green-600 mb-1">Completed</div>
+                <div className="text-2xl font-bold text-green-800">
+                  {dashboardArtifacts.sbl_skus.summary.completedSKUs}
+                </div>
+                <div className="text-xs text-green-500">Fully processed</div>
+              </div>
+              
+              {/* Completion Rate */}
+              <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <div className="text-sm text-blue-600 mb-1">Completion</div>
+                <div className="text-2xl font-bold text-blue-800">
+                  {Math.round(dashboardArtifacts.sbl_skus.summary.completionRate * 100)}%
+                </div>
+                <div className="text-xs text-blue-500">Overall progress</div>
+              </div>
+            </div>
+            
+            {/* Top Pending SKUs */}
+            <div className="mt-4">
+              <div className="text-sm font-medium text-slate-700 mb-2">Top Pending SKUs by Lines</div>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {dashboardArtifacts.sbl_skus.skus
+                  .filter((sku: any) => sku.status === 'pending')
+                  .sort((a: any, b: any) => b.pending_lines - a.pending_lines)
+                  .slice(0, 5)
+                  .map((sku: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-2 bg-orange-50 rounded border border-orange-200">
+                    <div className="flex items-center gap-2">
+                      <div className="text-xs font-mono bg-orange-100 px-2 py-1 rounded">{sku.sku}</div>
+                      <div className="text-xs text-slate-600">{sku.station_code}</div>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="text-orange-600 font-semibold">{sku.pending_lines} pending</span>
+                      <span className="text-slate-500">{sku.total_lines} total</span>
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        sku.priority === 'high' ? 'bg-red-100 text-red-800' :
+                        sku.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {sku.priority}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {dashboardArtifacts.sbl_skus.skus.filter((sku: any) => sku.status === 'pending').length > 5 && (
+                  <div className="text-xs text-slate-500 text-center">
+                    +{dashboardArtifacts.sbl_skus.skus.filter((sku: any) => sku.status === 'pending').length - 5} more pending SKUs
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Trip Progress Funnel */}
+        <Funnel trips={state.trips} highlight={state.highlight==='FUNNEL'} componentId="TripsGrid" uiHighlights={uiHighlights} />
       </div>
 
-      <div className="lg:col-span-1">
-        {/* Spacer for fixed chat panel */}
-      </div>
+        {/* Right Panel: Full Height Copilot */}
+        <div className="lg:col-span-1 xl:col-span-1">
+          <div className="h-[calc(100vh-8rem)] sticky top-4">
+            <div className="h-full w-96 rounded-2xl border-2 border-blue-200 bg-white shadow-lg overflow-hidden">
+              <div className="h-full flex flex-col">
+                {/* Copilot Header */}
+                <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <Bot size={20} className="text-blue-600"/>
+                    <span className="font-semibold text-blue-800">Warehouse Copilot</span>
+                  </div>
+                </div>
+                
+                {/* Copilot Content - Scrollable */}
+                <div className="flex-1 overflow-hidden">
+                  <CopilotPanel 
+                    onQuery={handleQuery}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
     </div>
   );
 
@@ -641,33 +1247,129 @@ export default function VapiWaveCopilotDual() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:block text-xs text-slate-500 mr-2">Switch layout</div>
-              <div className="flex items-center gap-2 border rounded-xl px-2 py-1 bg-white">
-                <button onClick={()=>setMode('HYBRID')} className={`text-xs px-2 py-1 rounded-lg ${mode==='HYBRID'? 'bg-slate-900 text-white':'hover:bg-slate-50'}`}>Hybrid</button>
-                <button onClick={()=>setMode('THREEPANEL')} className={`text-xs px-2 py-1 rounded-lg ${mode==='THREEPANEL'? 'bg-slate-900 text-white':'hover:bg-slate-50'}`}>Three‑Panel</button>
+            {/* Data Status Indicator */}
+            {dashboardArtifacts && (
+              <div className="flex items-center gap-2 text-xs">
+                <div className={`w-2 h-2 rounded-full ${dashboardArtifacts.calculation_timestamp ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                <span className="text-slate-600">
+                  {dashboardArtifacts.calculation_timestamp 
+                    ? `Data updated ${new Date(dashboardArtifacts.calculation_timestamp).toLocaleTimeString()}`
+                    : 'No data available'
+                  }
+                </span>
               </div>
-            </div>
+            )}
             <ExcelUpload onUploadComplete={() => {
               // Refresh data after upload
-              window.location.reload();
+              const loadData = async () => {
+                setIsDataLoading(true);
+                try {
+                  const [artifacts, recs, sblTimeline, ptlTimeline] = await Promise.all([
+                    fetchDashboardArtifacts(),
+                    fetchRecommendations(),
+                    fetchSBLTimeline(),
+                    fetchPTLTimeline()
+                  ]);
+                  
+                  setDashboardArtifacts(artifacts);
+                  setRecommendations(recs);
+                  
+                  setState(prev => ({
+                    ...prev,
+                    sblBuckets: transformTimelineToChart(sblTimeline),
+                    ptlBuckets: transformTimelineToChart(ptlTimeline)
+                  }));
+                } catch (error) {
+                  console.error('Error loading data:', error);
+                } finally {
+                  setIsDataLoading(false);
+                }
+              };
+              loadData();
             }} />
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 pb-8">
-        {mode==='HYBRID'? Hybrid : ThreePanel}
+        {UnifiedThreePanel}
       </main>
 
       <footer className="py-6 text-center text-xs text-slate-500">Prototype · Mock data · Writes disabled</footer>
-      
-      {/* Fixed Chat Panel */}
-      <div className="fixed top-20 right-4 w-80 h-[calc(100vh-6rem)] max-h-[500px] min-h-[400px] z-30 hidden lg:block">
-        <div className="h-full rounded-2xl border bg-white shadow-lg overflow-hidden">
-          <CopilotPanel onQuery={handleQuery} />
+
+      {/* Modal for Issue Details */}
+      {modalOpen && modalContent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-slate-800">{modalContent.title}</h3>
+              <button 
+                onClick={() => setModalOpen(false)}
+                className="text-slate-500 hover:text-slate-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <div className="text-sm text-slate-600 mb-2">
+                {modalContent.count} stations found
+              </div>
+              {modalContent.type === 'productivity' && (
+                <div className="text-sm text-slate-500">
+                  These stations are performing below target productivity. Check equipment, training, or workflow issues.
+                </div>
+              )}
+              {modalContent.type === 'infeed' && (
+                <div className="text-sm text-slate-500">
+                  These stations have low infeed rates. Check conveyor system and carton availability.
+                </div>
+              )}
+              {modalContent.type === 'healthy' && (
+                <div className="text-sm text-slate-500">
+                  These stations are performing well within target range.
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {modalContent.stations.map((station: any, idx: number) => (
+                <div key={idx} className="bg-slate-50 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="font-medium text-slate-800">{station.station_code}</div>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        station.station_code.startsWith('V') ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {station.station_code.startsWith('V') ? 'SBL' : 'PTL'}
+                      </span>
+                    </div>
+                    <div className="text-sm text-slate-600">
+                      {modalContent.type === 'infeed' ? (
+                        `Infeed: ${station.infeed_rate} LPH`
+                      ) : (
+                        `${station.productivity} LPH (${station.performance_pct}% of target)`
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    {station.remaining} lines remaining
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-slate-200">
+              <button 
+                onClick={() => setModalOpen(false)}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 } 

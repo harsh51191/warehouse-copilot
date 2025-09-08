@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Upload, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, X, CheckCircle, AlertCircle, Loader2, Info } from 'lucide-react';
 
 interface UploadResult {
   filename: string;
@@ -21,6 +21,7 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult[] | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,6 +56,7 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
 
     setIsUploading(true);
     setUploadResult(null);
+    setUploadProgress('Uploading files...');
 
     try {
       const formData = new FormData();
@@ -62,23 +64,36 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
         formData.append('files', file);
       });
 
+      setUploadProgress('Validating files...');
       const response = await fetch('/api/upload/replace-excel', {
         method: 'POST',
         body: formData,
       });
 
+      setUploadProgress('Processing data...');
       const result = await response.json();
       
       if (result.success) {
+        setUploadProgress('Generating analytics...');
+        // Add a small delay to show the analytics generation step
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        setUploadProgress('Complete!');
         setUploadResult(result.validationResults);
         setSelectedFiles([]);
-        setIsOpen(false);
-        onUploadComplete?.();
+        
+        // Show success message briefly before closing
+        setTimeout(() => {
+          setIsOpen(false);
+          onUploadComplete?.();
+        }, 1500);
       } else {
+        setUploadProgress('Upload failed');
         setUploadResult(result.validationResults || []);
       }
     } catch (error) {
       console.error('Upload error:', error);
+      setUploadProgress('Upload failed');
       setUploadResult([{
         filename: 'Upload Error',
         isValid: false,
@@ -197,6 +212,21 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
               </div>
             )}
 
+            {/* Upload Progress */}
+            {isUploading && (
+              <div className="mb-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <Loader2 size={20} className="animate-spin text-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">{uploadProgress}</p>
+                      <p className="text-xs text-blue-600">Please wait while we process your data...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Upload Results */}
             {uploadResult && (
               <div className="mb-6">
@@ -241,6 +271,44 @@ export default function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
                       )}
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Missing Files Indicator */}
+            {uploadResult && (
+              <div className="mb-6">
+                <h3 className="text-base font-medium mb-3">Data Coverage</h3>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Info size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium text-amber-800 mb-2">Expected Files for Complete Analytics:</p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <p className="font-medium text-amber-700 mb-1">Core Files:</p>
+                          <ul className="space-y-1 text-amber-600">
+                            <li>• wave_macros (Wave parameters)</li>
+                            <li>• line_completion_2 (SBL completion)</li>
+                            <li>• sbl_productivity (SBL trends)</li>
+                            <li>• ptl_productivity (PTL trends)</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="font-medium text-amber-700 mb-1">Enhanced Analytics:</p>
+                          <ul className="space-y-1 text-amber-600">
+                            <li>• updated_loading_dashboard_query (Trip data)</li>
+                            <li>• secondary_sortation (QC data)</li>
+                            <li>• ptl_table_lines (Station data)</li>
+                            <li>• sbl_summary (Station productivity)</li>
+                          </ul>
+                        </div>
+                      </div>
+                      <p className="text-amber-600 mt-2">
+                        <strong>Note:</strong> System works with any uploaded files, but more files = better insights!
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { INTENTS, getIntentById, Intent, IntentParam } from "./intents";
+import { RecommendationEngine } from "./analytics/recommendation-engine";
 
 export interface ToolResult { 
   type: string; 
@@ -23,6 +24,43 @@ export interface AnalysisResult {
 
 export async function analyseQuery(question: string): Promise<AnalysisResult> {
   const apiKey = process.env.GEMINI_API_KEY;
+  
+  // First, try to get analytics-based answer if available
+  try {
+    // Import the analytics functions directly instead of making HTTP requests
+    const { getProcessedMacros } = await import('../server/datasource/macros-adapter');
+    const { ArtifactGenerator } = await import('./analytics/artifact-generator');
+    
+    const macros = await getProcessedMacros();
+    if (macros) {
+      const generator = new ArtifactGenerator();
+      const artifacts = await generator.generateDashboardArtifacts(macros);
+      
+      if (artifacts && artifacts.overall_summary) {
+        const recommendationEngine = new RecommendationEngine();
+        const factBasedAnswer = recommendationEngine.generateFactBasedAnswer(question, artifacts);
+        
+        // Determine UI highlights based on question
+        const lowerQuestion = question.toLowerCase();
+        let highlights: string[] = [];
+        
+        if (lowerQuestion.includes('sbl')) highlights.push('SBLTrend', 'SBLStations');
+        if (lowerQuestion.includes('ptl')) highlights.push('PTLTrend', 'PTLTotals');
+        if (lowerQuestion.includes('trip') || lowerQuestion.includes('loading')) highlights.push('TripsGrid');
+        if (lowerQuestion.includes('otif') || lowerQuestion.includes('overall')) highlights.push('WaveSummary');
+        
+        return {
+          reasoning: 'Analytics-based fact-driven response using dashboard artifacts',
+          intent: 'analytics_based',
+          parameters: {},
+          answer: factBasedAnswer,
+          uiPatch: { highlight: highlights }
+        };
+      }
+    }
+  } catch (error) {
+    console.log('Analytics not available, falling back to LLM:', error);
+  }
   
   if (!apiKey) {
     // No API key - provide helpful guidance

@@ -6,6 +6,16 @@ export interface ExcelValidationSchema {
 }
 
 export const EXCEL_SCHEMAS: Record<string, ExcelValidationSchema> = {
+  'wave_macros': {
+    filename: 'wave_macros',
+    requiredColumns: [
+      'wave_id', 'start_time_iso', 'cutoff_time_iso', 'total_orders', 'total_order_lines'
+    ],
+    optionalColumns: [
+      'total_order_value', 'split_lines_sbl', 'split_lines_ptl', 'split_lines_fc'
+    ],
+    description: 'Wave Macros - Single source of truth for wave parameters'
+  },
   'updated_loading_dashboard_query': {
     filename: 'updated_loading_dashboard_query',
     requiredColumns: [
@@ -186,6 +196,11 @@ function detectFileType(filename: string): string | null {
     if (lowerName.includes(schema.filename)) {
       return key;
     }
+  }
+  
+  // Check for wave_macros specifically
+  if (lowerName.includes('wave_macros') || lowerName.includes('macros')) {
+    return 'wave_macros';
   }
   
   // Check for variations and patterns

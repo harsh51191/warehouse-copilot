@@ -1,0 +1,59 @@
+{
+  "waveInfo": {
+    "wave_id": "1",
+    "start_time_iso": "2025-09-06T12:00:00.000Z",
+    "cutoff_time_iso": "2025-09-06T17:00:00.000Z",
+    "total_orders": 1000,
+    "total_order_lines": 12000,
+    "total_order_value": 1000000,
+    "split_lines_sbl": 5000,
+    "split_lines_ptl": 5000,
+    "split_lines_fc": 3000
+  },
+  "stageTargets": {
+    "SBL": {
+      "target_lph": 120,
+      "bucket_minutes": 10,
+      "expected_duration_hours": 2.5
+    },
+    "PTL": {
+      "target_lph": 180,
+      "bucket_minutes": 10,
+      "expected_duration_hours": 2.5
+    },
+    "SORT": {
+      "target_lph": 200,
+      "bucket_minutes": 10,
+      "expected_duration_hours": 7.25
+    },
+    "STAGE": {
+      "target_lph": 150,
+      "bucket_minutes": 10,
+      "expected_duration_hours": 7.5
+    },
+    "LOAD": {
+      "target_lph": 100,
+      "bucket_minutes": 10,
+      "expected_duration_hours": 7
+    }
+  },
+  "thresholds": {
+    "buffer_floor_minutes_global": 20,
+    "buffer_floor_minutes_sbl": 15,
+    "buffer_floor_minutes_ptl": 15,
+    "buffer_floor_minutes_sort": 20,
+    "buffer_floor_minutes_stage": 20,
+    "buffer_floor_minutes_load": 20,
+    "risk_threshold_trip": 0.6,
+    "starvation_Lmin_lines": 20,
+    "starvation_Rmin_factor_of_target": 0.5,
+    "ptl_shortfall_min_factor": 0.1
+  },
+  "startTime": "2025-09-06T12:00:00.000Z",
+  "cutoffTime": "2025-09-06T17:00:00.000Z",
+  "expectedDuration": {
+    "sbl": 2.5,
+    "ptl": 2.5,
+    "total": 7.5
+  }
+}

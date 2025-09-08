@@ -1,0 +1,549 @@
+{
+  "overall_summary": {
+    "projected_finish_iso": "2025-09-08T02:52:23.499Z",
+    "buffer_minutes": -2032,
+    "otif_risk": "HIGH",
+    "line_coverage_pct": 0.71,
+    "wave_status": "LATE",
+    "sbl_coverage_pct": 1.704,
+    "ptl_coverage_pct": 0
+  },
+  "sbl_stations": [
+    {
+      "station_code": "V031",
+      "total": 335,
+      "packed": 331,
+      "remaining": 4,
+      "completion_pct": 0.9881,
+      "last10_lph": 24,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 93,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V032",
+      "total": 352,
+      "packed": 349,
+      "remaining": 3,
+      "completion_pct": 0.9915,
+      "last10_lph": 22.5,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 90,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V033",
+      "total": 404,
+      "packed": 401,
+      "remaining": 3,
+      "completion_pct": 0.9926,
+      "last10_lph": 26.400000000000002,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 100.80000000000001,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V034",
+      "total": 323,
+      "packed": 319,
+      "remaining": 4,
+      "completion_pct": 0.9876,
+      "last10_lph": 8,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 32,
+      "is_productivity_issue": true,
+      "is_infeed_issue": true,
+      "issue_type": "infeed"
+    },
+    {
+      "station_code": "V035",
+      "total": 345,
+      "packed": 342,
+      "remaining": 3,
+      "completion_pct": 0.9913,
+      "last10_lph": 27,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 99,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V036",
+      "total": 340,
+      "packed": 333,
+      "remaining": 7,
+      "completion_pct": 0.9793999999999999,
+      "last10_lph": 16,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 54,
+      "is_productivity_issue": true,
+      "is_infeed_issue": true,
+      "issue_type": "infeed"
+    },
+    {
+      "station_code": "V037",
+      "total": 346,
+      "packed": 338,
+      "remaining": 8,
+      "completion_pct": 0.9769,
+      "last10_lph": 27.599999999999998,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 108,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V038",
+      "total": 433,
+      "packed": 429,
+      "remaining": 4,
+      "completion_pct": 0.9908,
+      "last10_lph": 12,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 42,
+      "is_productivity_issue": true,
+      "is_infeed_issue": true,
+      "issue_type": "infeed"
+    },
+    {
+      "station_code": "V039",
+      "total": 360,
+      "packed": 358,
+      "remaining": 2,
+      "completion_pct": 0.9944,
+      "last10_lph": 16,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 54,
+      "is_productivity_issue": true,
+      "is_infeed_issue": true,
+      "issue_type": "infeed"
+    },
+    {
+      "station_code": "V040",
+      "total": 339,
+      "packed": 335,
+      "remaining": 4,
+      "completion_pct": 0.9882,
+      "last10_lph": 12,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 46.5,
+      "is_productivity_issue": true,
+      "is_infeed_issue": true,
+      "issue_type": "infeed"
+    },
+    {
+      "station_code": "V041",
+      "total": 444,
+      "packed": 435,
+      "remaining": 9,
+      "completion_pct": 0.9797,
+      "last10_lph": 25.200000000000003,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 91.19999999999999,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V042",
+      "total": 359,
+      "packed": 358,
+      "remaining": 1,
+      "completion_pct": 0.9972,
+      "last10_lph": 19.5,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 79.5,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V043",
+      "total": 370,
+      "packed": 363,
+      "remaining": 7,
+      "completion_pct": 0.9811,
+      "last10_lph": 45.599999999999994,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 181.2,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V044",
+      "total": 341,
+      "packed": 336,
+      "remaining": 5,
+      "completion_pct": 0.9853000000000001,
+      "last10_lph": 21,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 84,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V045",
+      "total": 358,
+      "packed": 349,
+      "remaining": 9,
+      "completion_pct": 0.9749,
+      "last10_lph": 22.799999999999997,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 90,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V046",
+      "total": 346,
+      "packed": 340,
+      "remaining": 6,
+      "completion_pct": 0.9826999999999999,
+      "last10_lph": 24,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 96,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V047",
+      "total": 348,
+      "packed": 336,
+      "remaining": 12,
+      "completion_pct": 0.9655,
+      "last10_lph": 10,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 36,
+      "is_productivity_issue": true,
+      "is_infeed_issue": true,
+      "issue_type": "infeed"
+    },
+    {
+      "station_code": "V048",
+      "total": 346,
+      "packed": 343,
+      "remaining": 3,
+      "completion_pct": 0.9913,
+      "last10_lph": 30,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 116,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V049",
+      "total": 356,
+      "packed": 352,
+      "remaining": 4,
+      "completion_pct": 0.9887999999999999,
+      "last10_lph": 28.5,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 114,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V050",
+      "total": 347,
+      "packed": 337,
+      "remaining": 10,
+      "completion_pct": 0.9712000000000001,
+      "last10_lph": 25,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 95,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V051",
+      "total": 361,
+      "packed": 354,
+      "remaining": 7,
+      "completion_pct": 0.9806,
+      "last10_lph": 16.799999999999997,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 63.599999999999994,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V052",
+      "total": 337,
+      "packed": 332,
+      "remaining": 5,
+      "completion_pct": 0.9852,
+      "last10_lph": 13.5,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 57,
+      "is_productivity_issue": true,
+      "is_infeed_issue": true,
+      "issue_type": "infeed"
+    },
+    {
+      "station_code": "V053",
+      "total": 332,
+      "packed": 326,
+      "remaining": 6,
+      "completion_pct": 0.9819,
+      "last10_lph": 24,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 96,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    },
+    {
+      "station_code": "V054",
+      "total": 433,
+      "packed": 424,
+      "remaining": 9,
+      "completion_pct": 0.9792000000000001,
+      "last10_lph": 29,
+      "target_lph": 120,
+      "starved": false,
+      "health_color": "red",
+      "recent_infeed_lph": 114,
+      "is_productivity_issue": true,
+      "is_infeed_issue": false,
+      "issue_type": "productivity"
+    }
+  ],
+  "sbl_stream": {
+    "ema_lph": 59,
+    "last_hour_avg": 59,
+    "slope": -9,
+    "trend": "down",
+    "health_color": "red"
+  },
+  "ptl_stream": {
+    "ema_lph": 13,
+    "last_hour_avg": 13,
+    "slope": -0.5,
+    "trend": "stable",
+    "shortfall": true,
+    "shortfall_factor": 0.93,
+    "health_color": "red"
+  },
+  "ptl_totals": {
+    "last_hour_lines": 0,
+    "by_station": [],
+    "leaderboard": {
+      "top": [],
+      "bottom": []
+    }
+  },
+  "trips": [
+    {
+      "mm_trip": "TR619119640474865664",
+      "sorted_pct": 1,
+      "staged_pct": 1,
+      "loaded_pct": 1,
+      "qc_ratio": 0,
+      "dockdoorQueue": 1,
+      "risk": 0.02,
+      "risk_factors": {
+        "behind_sorted": 0,
+        "qc_ratio": 0,
+        "door_norm": 0.1,
+        "trend_down": 0
+      },
+      "health_color": "green"
+    },
+    {
+      "mm_trip": "TR619119640474865665",
+      "sorted_pct": 1,
+      "staged_pct": 1,
+      "loaded_pct": 1,
+      "qc_ratio": 0,
+      "dockdoorQueue": 1,
+      "risk": 0.02,
+      "risk_factors": {
+        "behind_sorted": 0,
+        "qc_ratio": 0,
+        "door_norm": 0.1,
+        "trend_down": 0
+      },
+      "health_color": "green"
+    },
+    {
+      "mm_trip": "TR619119682763354112",
+      "sorted_pct": 1,
+      "staged_pct": 1,
+      "loaded_pct": 1,
+      "qc_ratio": 0,
+      "dockdoorQueue": 1,
+      "risk": 0.02,
+      "risk_factors": {
+        "behind_sorted": 0,
+        "qc_ratio": 0,
+        "door_norm": 0.1,
+        "trend_down": 0
+      },
+      "health_color": "green"
+    },
+    {
+      "mm_trip": "TR619119692393476096",
+      "sorted_pct": 1,
+      "staged_pct": 1,
+      "loaded_pct": 1,
+      "qc_ratio": 0,
+      "dockdoorQueue": 1,
+      "risk": 0.02,
+      "risk_factors": {
+        "behind_sorted": 0,
+        "qc_ratio": 0,
+        "door_norm": 0.1,
+        "trend_down": 0
+      },
+      "health_color": "green"
+    },
+    {
+      "mm_trip": "TR619119692393476097",
+      "sorted_pct": 1,
+      "staged_pct": 1,
+      "loaded_pct": 1,
+      "qc_ratio": 0,
+      "dockdoorQueue": 1,
+      "risk": 0.02,
+      "risk_factors": {
+        "behind_sorted": 0,
+        "qc_ratio": 0,
+        "door_norm": 0.1,
+        "trend_down": 0
+      },
+      "health_color": "green"
+    }
+  ],
+  "sbl_skus": {
+    "skus": [],
+    "summary": {
+      "totalSKUs": 0,
+      "pendingSKUs": 0,
+      "completedSKUs": 0,
+      "totalLines": 0,
+      "pendingLines": 0
+    }
+  },
+  "calculation_timestamp": "2025-09-08T02:49:49.661Z",
+  "macros": {
+    "waveInfo": {
+      "wave_id": "1",
+      "start_time_iso": "2025-09-06T12:00:00.000Z",
+      "cutoff_time_iso": "2025-09-06T17:00:00.000Z",
+      "total_orders": 1000,
+      "total_order_lines": 12000,
+      "total_order_value": 1000000,
+      "split_lines_sbl": 5000,
+      "split_lines_ptl": 5000,
+      "split_lines_fc": 3000
+    },
+    "stageTargets": {
+      "SBL": {
+        "target_lph": 120,
+        "bucket_minutes": 10,
+        "expected_duration_hours": 2.5
+      },
+      "PTL": {
+        "target_lph": 180,
+        "bucket_minutes": 10,
+        "expected_duration_hours": 2.5
+      },
+      "SORT": {
+        "target_lph": 200,
+        "bucket_minutes": 10,
+        "expected_duration_hours": 7.25
+      },
+      "STAGE": {
+        "target_lph": 150,
+        "bucket_minutes": 10,
+        "expected_duration_hours": 7.5
+      },
+      "LOAD": {
+        "target_lph": 100,
+        "bucket_minutes": 10,
+        "expected_duration_hours": 7
+      }
+    },
+    "thresholds": {
+      "buffer_floor_minutes_global": 20,
+      "buffer_floor_minutes_sbl": 15,
+      "buffer_floor_minutes_ptl": 15,
+      "buffer_floor_minutes_sort": 20,
+      "buffer_floor_minutes_stage": 20,
+      "buffer_floor_minutes_load": 20,
+      "risk_threshold_trip": 0.6,
+      "starvation_Lmin_lines": 20,
+      "starvation_Rmin_factor_of_target": 0.5,
+      "ptl_shortfall_min_factor": 0.1
+    },
+    "startTime": "2025-09-06T12:00:00.000Z",
+    "cutoffTime": "2025-09-06T17:00:00.000Z",
+    "expectedDuration": {
+      "sbl": 2.5,
+      "ptl": 2.5,
+      "total": 7.5
+    }
+  }
+}

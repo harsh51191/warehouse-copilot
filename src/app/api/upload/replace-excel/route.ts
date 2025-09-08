@@ -3,6 +3,8 @@ import { writeFile, readdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { readFirstSheetAsJsonFromBuffer } from '@/lib/xlsx';
 import { validateExcelFile, EXCEL_SCHEMAS } from '@/lib/excel-validation';
+import { ArtifactGenerator } from '@/lib/analytics/artifact-generator';
+import { getProcessedMacros } from '@/server/datasource/macros-adapter';
 
 export async function POST(request: NextRequest) {
   try {
@@ -117,10 +119,28 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Generate dashboard artifacts after successful upload
+    let artifactsGenerated = false;
+    try {
+      const macros = await getProcessedMacros();
+      if (macros) {
+        const generator = new ArtifactGenerator();
+        await generator.generateDashboardArtifacts(macros);
+        artifactsGenerated = true;
+        console.log('Dashboard artifacts generated successfully');
+      } else {
+        console.log('No macros found, skipping artifact generation');
+      }
+    } catch (error) {
+      console.error('Error generating artifacts:', error);
+      // Don't fail the upload if artifact generation fails
+    }
+
     return NextResponse.json({
       success: true,
-      message: `Successfully replaced ${savedFiles.length} Excel files`,
+      message: `Successfully replaced ${savedFiles.length} Excel files${artifactsGenerated ? ' and generated analytics' : ''}`,
       savedFiles,
+      artifactsGenerated,
       validationResults: validationResults.map(r => ({
         filename: r.filename,
         isValid: r.validation.isValid,
