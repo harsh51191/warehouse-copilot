@@ -1247,7 +1247,7 @@ export default function VapiWaveCopilotDual() {
             <div className="w-9 h-9 rounded-xl bg-slate-900 text-white grid place-items-center font-semibold">SB</div>
             <div>
               <div className="font-semibold leading-tight">StackBOX Copilot — HUL Vapi</div>
-              <div className="text-xs text-slate-500">Outbound · Wave {state.waveId}</div>
+              <div className="text-xs text-slate-500">Outbound Operations</div>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -1257,7 +1257,12 @@ export default function VapiWaveCopilotDual() {
                 <div className={`w-2 h-2 rounded-full ${dashboardArtifacts.calculation_timestamp ? 'bg-green-500' : 'bg-gray-400'}`}></div>
                 <span className="text-slate-600">
                   {dashboardArtifacts.calculation_timestamp 
-                    ? `Data updated ${new Date(dashboardArtifacts.calculation_timestamp).toLocaleTimeString()}`
+                    ? `Data updated ${new Date(dashboardArtifacts.calculation_timestamp).toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        second: '2-digit',
+                        hour12: true 
+                      })}`
                     : 'No data available'
                   }
                 </span>
