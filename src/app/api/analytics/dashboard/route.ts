@@ -88,6 +88,9 @@ export async function GET() {
       const artifacts: DashboardArtifacts = JSON.parse(artifactsData);
       
       console.log('[DASHBOARD API] Successfully loaded artifacts, SBL rate:', artifacts.sbl_stream?.ema_lph);
+      console.log('[DASHBOARD API] Artifacts calculation timestamp:', artifacts.calculation_timestamp);
+      console.log('[DASHBOARD API] Artifacts file path:', artifactsPath);
+      console.log('[DASHBOARD API] File modification time:', new Date().toISOString());
       
       // Add cache-busting headers to ensure fresh data
       const response = NextResponse.json({

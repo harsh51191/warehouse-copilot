@@ -150,17 +150,19 @@ export async function POST(request: NextRequest) {
     // Generate dashboard artifacts after successful upload
     let artifactsGenerated = false;
     try {
+      console.log('[UPLOAD] Starting artifact generation...');
       const macros = await getProcessedMacros();
       if (macros) {
+        console.log('[UPLOAD] Macros found, generating artifacts...');
         const generator = new ArtifactGenerator();
         await generator.generateDashboardArtifacts(macros);
         artifactsGenerated = true;
-        console.log('Dashboard artifacts generated successfully');
+        console.log('[UPLOAD] Dashboard artifacts generated successfully');
       } else {
-        console.log('No macros found, skipping artifact generation');
+        console.log('[UPLOAD] No macros found, skipping artifact generation');
       }
     } catch (error) {
-      console.error('Error generating artifacts:', error);
+      console.error('[UPLOAD] Error generating artifacts:', error);
       // Don't fail the upload if artifact generation fails
     }
 
