@@ -28,10 +28,14 @@ export async function GET() {
         
         console.log('[DASHBOARD API] /tmp/data exists:', tmpDataExists);
         console.log('[DASHBOARD API] Excel files in /tmp/data:', tmpDataFiles.length);
+        console.log('[DASHBOARD API] Excel files in /tmp/data:', tmpDataFiles);
         
-        // If no Excel files in /tmp/data, copy from repository
-        if (tmpDataFiles.length === 0) {
-          console.log('[DASHBOARD API] Copying Excel files from repository to /tmp/data...');
+        // Always use /tmp/data if it has files, otherwise fall back to repository
+        if (tmpDataFiles.length > 0) {
+          console.log('[DASHBOARD API] Using uploaded files from /tmp/data');
+          // Use the uploaded files directly
+        } else {
+          console.log('[DASHBOARD API] No uploaded files found, copying from repository to /tmp/data...');
           
           // Ensure /tmp/data exists
           fs.mkdirSync(tmpDataDir, { recursive: true });
@@ -46,21 +50,23 @@ export async function GET() {
             fs.copyFileSync(srcPath, destPath);
             console.log('[DASHBOARD API] Copied:', file);
           }
-          
-          // Now regenerate artifacts
-          console.log('[DASHBOARD API] Regenerating artifacts...');
-          const { ArtifactGenerator } = await import('@/lib/analytics/artifact-generator');
-          const { getProcessedMacros } = await import('@/server/datasource/macros-adapter');
-          
-          const macros = await getProcessedMacros();
-          if (macros) {
-            const generator = new ArtifactGenerator();
-            await generator.generateDashboardArtifacts(macros);
-            console.log('[DASHBOARD API] Artifacts regenerated successfully');
-          }
+        }
+        
+        // Always regenerate artifacts to ensure they're up to date
+        console.log('[DASHBOARD API] Regenerating artifacts...');
+        const { ArtifactGenerator } = await import('@/lib/analytics/artifact-generator');
+        const { getProcessedMacros } = await import('@/server/datasource/macros-adapter');
+        
+        const macros = await getProcessedMacros();
+        if (macros) {
+          const generator = new ArtifactGenerator();
+          await generator.generateDashboardArtifacts(macros);
+          console.log('[DASHBOARD API] Artifacts regenerated successfully');
+        } else {
+          console.log('[DASHBOARD API] No macros found, skipping artifact generation');
         }
       } catch (e) {
-        console.log('[DASHBOARD API] Error copying files:', e);
+        console.log('[DASHBOARD API] Error setting up data:', e);
       }
     }
     

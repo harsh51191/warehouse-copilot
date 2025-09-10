@@ -4,14 +4,24 @@ import path from "path";
 
 export function readFirstSheetAsJson(filePath: string): any[] {
 	const buf = fs.readFileSync(filePath);
-	const wb = XLSX.read(buf, { type: "buffer" });
+	const wb = XLSX.read(buf, { 
+		type: "buffer",
+		cellDates: true,
+		cellNF: false,
+		cellText: false
+	});
 	const sheetName = wb.SheetNames[0];
 	const ws = wb.Sheets[sheetName];
 	return XLSX.utils.sheet_to_json(ws, { defval: null });
 }
 
 export function readFirstSheetAsJsonFromBuffer(buffer: Buffer): any[] {
-	const wb = XLSX.read(buffer, { type: "buffer" });
+	const wb = XLSX.read(buffer, { 
+		type: "buffer",
+		cellDates: true,
+		cellNF: false,
+		cellText: false
+	});
 	const sheetName = wb.SheetNames[0];
 	const ws = wb.Sheets[sheetName];
 	return XLSX.utils.sheet_to_json(ws, { defval: null });

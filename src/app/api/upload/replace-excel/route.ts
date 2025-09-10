@@ -75,12 +75,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if all files are valid
+    // Check validation results and provide detailed feedback
     const invalidFiles = validationResults.filter(r => !r.validation.isValid);
-    if (invalidFiles.length > 0) {
+    const validFiles = validationResults.filter(r => r.validation.isValid && r.validation.detectedType !== 'ignored');
+    
+    // If no valid files at all, reject the upload
+    if (validFiles.length === 0) {
       return NextResponse.json({
         success: false,
-        error: 'File validation failed',
+        error: 'No valid files found for upload',
         validationResults: validationResults.map(r => ({
           filename: r.filename,
           isValid: r.validation.isValid,
@@ -89,6 +92,12 @@ export async function POST(request: NextRequest) {
           detectedType: r.validation.detectedType
         }))
       }, { status: 400 });
+    }
+    
+    // If there are invalid files, provide warning but continue with valid files
+    const hasInvalidFiles = invalidFiles.length > 0;
+    if (hasInvalidFiles) {
+      console.warn(`Upload proceeding with ${validFiles.length} valid files, ${invalidFiles.length} files will be skipped due to validation errors`);
     }
 
     // Get data directory - use /tmp for Vercel compatibility
@@ -155,18 +164,33 @@ export async function POST(request: NextRequest) {
       // Don't fail the upload if artifact generation fails
     }
 
+    // Prepare response with detailed validation results
+    const responseValidationResults = validationResults.map(r => ({
+      filename: r.filename,
+      isValid: r.validation.isValid,
+      errors: r.validation.errors,
+      warnings: r.validation.warnings,
+      detectedType: r.validation.detectedType
+    }));
+
+    const skippedFiles = invalidFiles.map(f => ({
+      filename: f.filename,
+      errors: f.validation.errors,
+      detectedType: f.validation.detectedType
+    }));
+
+    let message = `Successfully uploaded ${savedFiles.length} Excel files${artifactsGenerated ? ' and generated analytics' : ''}`;
+    if (hasInvalidFiles) {
+      message += `. ${invalidFiles.length} files were skipped due to validation errors.`;
+    }
+
     return NextResponse.json({
       success: true,
-      message: `Successfully replaced ${savedFiles.length} Excel files${artifactsGenerated ? ' and generated analytics' : ''}`,
+      message,
       savedFiles,
       artifactsGenerated,
-      validationResults: validationResults.map(r => ({
-        filename: r.filename,
-        isValid: r.validation.isValid,
-        errors: r.validation.errors,
-        warnings: r.validation.warnings,
-        detectedType: r.validation.detectedType
-      }))
+      skippedFiles: hasInvalidFiles ? skippedFiles : [],
+      validationResults: responseValidationResults
     });
 
   } catch (error) {

@@ -34,10 +34,14 @@ export async function POST(req: Request) {
 				
 				console.log('[AI API] /tmp/data exists:', tmpDataExists);
 				console.log('[AI API] Excel files in /tmp/data:', tmpDataFiles.length);
+				console.log('[AI API] Excel files in /tmp/data:', tmpDataFiles);
 				
-				// If no Excel files in /tmp/data, copy from repository
-				if (tmpDataFiles.length === 0) {
-					console.log('[AI API] Copying Excel files from repository to /tmp/data...');
+				// Always use /tmp/data if it has files, otherwise fall back to repository
+				if (tmpDataFiles.length > 0) {
+					console.log('[AI API] Using uploaded files from /tmp/data');
+					// Use the uploaded files directly
+				} else {
+					console.log('[AI API] No uploaded files found, copying from repository to /tmp/data...');
 					
 					// Ensure /tmp/data exists
 					fs.mkdirSync(tmpDataDir, { recursive: true });
@@ -52,22 +56,20 @@ export async function POST(req: Request) {
 						fs.copyFileSync(srcPath, destPath);
 						console.log('[AI API] Copied:', file);
 					}
-					
-					// Now regenerate artifacts
-					console.log('[AI API] Regenerating artifacts...');
-					const { ArtifactGenerator } = await import('@/lib/analytics/artifact-generator');
-					const { getProcessedMacros } = await import('@/server/datasource/macros-adapter');
-					
-					const macros = await getProcessedMacros();
-					if (macros) {
-						const generator = new ArtifactGenerator();
-						await generator.generateDashboardArtifacts(macros);
-						console.log('[AI API] Artifacts regenerated successfully');
-					} else {
-						console.log('[AI API] No macros found after copying files');
-					}
+				}
+				
+				// Always regenerate artifacts to ensure they're up to date
+				console.log('[AI API] Regenerating artifacts...');
+				const { ArtifactGenerator } = await import('@/lib/analytics/artifact-generator');
+				const { getProcessedMacros } = await import('@/server/datasource/macros-adapter');
+				
+				const macros = await getProcessedMacros();
+				if (macros) {
+					const generator = new ArtifactGenerator();
+					await generator.generateDashboardArtifacts(macros);
+					console.log('[AI API] Artifacts regenerated successfully');
 				} else {
-					console.log('[AI API] Excel files already exist in /tmp/data, skipping copy');
+					console.log('[AI API] No macros found, skipping artifact generation');
 				}
 			} catch (e) {
 				console.log('[AI API] Error setting up data:', e);
