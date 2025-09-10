@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readdir, stat } from 'fs/promises';
 import { join } from 'path';
+// import { BlobStorage } from '@/lib/blob-storage';
 
 export async function GET() {
   try {
@@ -8,7 +9,7 @@ export async function GET() {
     
     console.log('[UPLOAD TEST] Checking data directory:', dataDir);
     
-    // List all files in /tmp/data
+    // List all files in data directory
     const files = await readdir(dataDir);
     const excelFiles = files.filter(f => f.endsWith('.xlsx'));
     

@@ -4,8 +4,7 @@ import { DashboardArtifacts, OverallSummary, SBLStation, SBLStream, PTLStream, P
 import { ProcessedMacros } from './macros-processor';
 import { getLoadingStatusFromFile, getSBLTimelineFromFile, getPTLTimelineFromFile, getStationCompletionFromFile, getSBLTableLinesFromFile, getPTLTableLinesFromFile, getSecondarySortationFromFile, getSBLSKUsFromFile, getSBLInfeedFromFile } from '../../server/datasource/file-adapter';
 import { STAGE_TARGETS, THRESHOLDS } from '../config/stage-targets';
-import { DataStorage } from '../storage';
-import { StorageAdapter } from '../storage-adapter';
+import { BlobStorage } from '../blob-storage';
 
 export class ArtifactGenerator {
   private derivedDir: string;
@@ -25,20 +24,29 @@ export class ArtifactGenerator {
       // Ensure derived directory exists
       await mkdir(this.derivedDir, { recursive: true });
       
-      // Use storage adapter to get data from uploaded files or repository
-      const storageAdapter = new StorageAdapter();
-      console.log('[ARTIFACT_GENERATOR] Using storage adapter for data loading');
+      // Log which data directory is being used
+      const dataDir = join(process.cwd(), 'data');
+      console.log('[ARTIFACT_GENERATOR] Using data directory:', dataDir);
+      
+      // Check what files exist in the data directory
+      try {
+        const fs = await import('fs');
+        const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.xlsx'));
+        console.log('[ARTIFACT_GENERATOR] Excel files found in data directory:', files);
+      } catch (error) {
+        console.log('[ARTIFACT_GENERATOR] Error listing files:', error);
+      }
 
       // Load all data sources (handle missing files gracefully)
       const [loadingData, sblTimeline, ptlTimeline, stationCompletion, sblTableLines, ptlTableLines, secondarySortation, sblSKUs] = await Promise.all([
-        storageAdapter.getLoadingStatus().catch(() => ({ byTrip: [], summary: { totalAssigned: 0, totalLoaded: 0 } })),
-        storageAdapter.getSBLTimeline().catch(() => ({ timeline: [], summary: { totalLines: 0, averageProductivity: 0 } })),
-        storageAdapter.getPTLTimeline().catch(() => ({ timeline: [], summary: { totalLines: 0, averageProductivity: 0 } })),
-        storageAdapter.getStationCompletion().catch(() => ({ stations: [], summary: { totalDemandLines: 0, totalPackedLines: 0 } })),
-        storageAdapter.getSBLTableLines().catch(() => ({ intervals: [], summary: { totalIntervals: 0, totalLines: 0, averageLinesPerInterval: 0 } })),
-        storageAdapter.getPTLTableLines().catch(() => ({ intervals: [], summary: { totalIntervals: 0, totalLines: 0, averageLinesPerInterval: 0 } })),
-        storageAdapter.getSecondarySortation().catch(() => ({ records: [], summary: { totalRecords: 0, totalCrates: 0, totalQC: 0 } })),
-        storageAdapter.getSBLSKUs().catch(() => ({ skus: [], summary: { totalSKUs: 0, pendingSKUs: 0, completedSKUs: 0, totalLines: 0, pendingLines: 0, completionRate: 0 } }))
+        getLoadingStatusFromFile().catch(() => ({ byTrip: [], summary: { totalAssigned: 0, totalLoaded: 0 } })),
+        getSBLTimelineFromFile().catch(() => ({ timeline: [], summary: { totalLines: 0, averageProductivity: 0 } })),
+        getPTLTimelineFromFile().catch(() => ({ timeline: [], summary: { totalLines: 0, averageProductivity: 0 } })),
+        getStationCompletionFromFile().catch(() => ({ stations: [], summary: { totalDemandLines: 0, totalPackedLines: 0 } })),
+        getSBLTableLinesFromFile().catch(() => ({ intervals: [], summary: { totalIntervals: 0, totalLines: 0, averageLinesPerInterval: 0 } })),
+        getPTLTableLinesFromFile().catch(() => ({ intervals: [], summary: { totalIntervals: 0, totalLines: 0, averageLinesPerInterval: 0 } })),
+        getSecondarySortationFromFile().catch(() => ({ records: [], summary: { totalRecords: 0, totalCrates: 0, totalQC: 0 } })),
+        getSBLSKUsFromFile().catch(() => ({ skus: [], summary: { totalSKUs: 0, pendingSKUs: 0, completedSKUs: 0, totalLines: 0, pendingLines: 0, completionRate: 0 } }))
       ]);
 
       this.logger.logCalculation('data_loaded', { 
