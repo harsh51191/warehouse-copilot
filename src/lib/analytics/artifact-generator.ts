@@ -497,9 +497,7 @@ export class AnalyticsLogger {
 
   constructor() {
     // Use /tmp for Vercel compatibility in production
-    const derivedDir = process.env.NODE_ENV === 'production' 
-      ? '/tmp/data/derived' 
-      : join(process.cwd(), 'data', 'derived');
+    const derivedDir = join(process.cwd(), 'data', 'derived');
     this.logFile = join(derivedDir, 'calculation_log.json');
   }
 

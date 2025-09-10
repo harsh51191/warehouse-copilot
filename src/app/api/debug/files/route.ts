@@ -4,8 +4,8 @@ import { join } from 'path';
 
 export async function GET() {
   try {
-    const dataDir = process.env.VERCEL === '1' ? '/tmp/data' : join(process.cwd(), 'data');
-    const derivedDir = process.env.VERCEL === '1' ? '/tmp/data/derived' : join(process.cwd(), 'data', 'derived');
+    const dataDir = join(process.cwd(), 'data');
+    const derivedDir = join(process.cwd(), 'data', 'derived');
     
     console.log('[DEBUG] Checking data directories...');
     console.log('[DEBUG] Data dir:', dataDir);

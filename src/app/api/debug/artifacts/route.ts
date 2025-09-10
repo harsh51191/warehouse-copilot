@@ -4,7 +4,7 @@ import { join } from 'path';
 
 export async function GET() {
   try {
-    const derivedDir = process.env.VERCEL === '1' ? '/tmp/data/derived' : join(process.cwd(), 'data', 'derived');
+    const derivedDir = join(process.cwd(), 'data', 'derived');
     const artifactsPath = join(derivedDir, 'dashboard_artifacts.json');
     
     console.log('[DEBUG] Checking artifacts...');
