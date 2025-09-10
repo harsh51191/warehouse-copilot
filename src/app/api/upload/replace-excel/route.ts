@@ -108,6 +108,29 @@ export async function POST(request: NextRequest) {
     console.log('VERCEL env:', process.env.VERCEL);
     console.log('NODE_ENV:', process.env.NODE_ENV);
     
+    // On Vercel, ensure /tmp/data exists and is writable
+    if (process.env.VERCEL === '1') {
+      try {
+        const fs = await import('fs');
+        if (!fs.existsSync('/tmp/data')) {
+          fs.mkdirSync('/tmp/data', { recursive: true });
+          console.log('[UPLOAD] Created /tmp/data directory');
+        }
+        
+        // Test write permissions
+        const testFile = '/tmp/data/test.txt';
+        fs.writeFileSync(testFile, 'test');
+        fs.unlinkSync(testFile);
+        console.log('[UPLOAD] /tmp/data is writable');
+      } catch (error) {
+        console.error('[UPLOAD] Error setting up /tmp/data:', error);
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to set up data directory on Vercel'
+        }, { status: 500 });
+      }
+    }
+    
     // Ensure directory exists
     try {
       await import('fs').then(fs => fs.promises.mkdir(dataDir, { recursive: true }));
@@ -134,6 +157,14 @@ export async function POST(request: NextRequest) {
     // Save new files
     const savedFiles = [];
     console.log('[UPLOAD] About to save', fileContents.length, 'files to', dataDir);
+    
+    // List existing files before saving
+    try {
+      const existingFiles = await readdir(dataDir);
+      console.log('[UPLOAD] Files in dataDir before saving:', existingFiles);
+    } catch (error) {
+      console.log('[UPLOAD] Could not list existing files:', error);
+    }
     
     for (const fileData of fileContents) {
       const schema = EXCEL_SCHEMAS[fileData.detectedType!];
@@ -169,6 +200,14 @@ export async function POST(request: NextRequest) {
         type: fileData.detectedType,
         description: schema.description
       });
+    }
+    
+    // List files after saving
+    try {
+      const filesAfterSaving = await readdir(dataDir);
+      console.log('[UPLOAD] Files in dataDir after saving:', filesAfterSaving);
+    } catch (error) {
+      console.log('[UPLOAD] Could not list files after saving:', error);
     }
     
     console.log('[UPLOAD] Successfully saved', savedFiles.length, 'files');
