@@ -23,6 +23,19 @@ export class ArtifactGenerator {
     try {
       // Ensure derived directory exists
       await mkdir(this.derivedDir, { recursive: true });
+      
+      // Log which data directory is being used
+      const dataDir = process.env.VERCEL === '1' ? '/tmp/data' : join(process.cwd(), 'data');
+      console.log('[ARTIFACT_GENERATOR] Using data directory:', dataDir);
+      
+      // Check what files exist in the data directory
+      try {
+        const fs = await import('fs');
+        const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.xlsx'));
+        console.log('[ARTIFACT_GENERATOR] Excel files found in data directory:', files);
+      } catch (error) {
+        console.log('[ARTIFACT_GENERATOR] Error listing files:', error);
+      }
 
       // Load all data sources (handle missing files gracefully)
     const [loadingData, sblTimeline, ptlTimeline, stationCompletion, sblTableLines, ptlTableLines, secondarySortation, sblSKUs] = await Promise.all([

@@ -133,12 +133,36 @@ export async function POST(request: NextRequest) {
 
     // Save new files
     const savedFiles = [];
+    console.log('[UPLOAD] About to save', fileContents.length, 'files to', dataDir);
+    
     for (const fileData of fileContents) {
       const schema = EXCEL_SCHEMAS[fileData.detectedType!];
       const newFilename = `${schema.filename}_${new Date().toISOString().replace(/[:.]/g, '-')}.xlsx`;
       const filePath = join(dataDir, newFilename);
       
+      console.log('[UPLOAD] Saving file:', {
+        originalName: fileData.filename,
+        newFilename: newFilename,
+        filePath: filePath,
+        bufferSize: fileData.buffer.length,
+        detectedType: fileData.detectedType
+      });
+      
       await writeFile(filePath, fileData.buffer);
+      
+      // Verify file was saved
+      try {
+        const fs = await import('fs');
+        const stats = fs.statSync(filePath);
+        console.log('[UPLOAD] File saved successfully:', {
+          path: filePath,
+          size: stats.size,
+          modified: stats.mtime.toISOString()
+        });
+      } catch (error) {
+        console.error('[UPLOAD] Error verifying saved file:', error);
+      }
+      
       savedFiles.push({
         originalName: fileData.filename,
         savedName: newFilename,
@@ -146,6 +170,8 @@ export async function POST(request: NextRequest) {
         description: schema.description
       });
     }
+    
+    console.log('[UPLOAD] Successfully saved', savedFiles.length, 'files');
 
     // Generate dashboard artifacts after successful upload
     let artifactsGenerated = false;
