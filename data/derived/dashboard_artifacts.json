@@ -1,12 +1,12 @@
 {
   "overall_summary": {
-    "projected_finish_iso": "2025-09-11T20:20:40.137Z",
-    "buffer_minutes": -3423,
+    "projected_finish_iso": "2025-09-10T12:40:07.496Z",
+    "buffer_minutes": -156,
     "otif_risk": "HIGH",
-    "line_coverage_pct": 0.47304032623470776,
+    "line_coverage_pct": 0.5146913823703412,
     "wave_status": "LATE",
-    "sbl_coverage_pct": 0.978535945261974,
-    "ptl_coverage_pct": 0.6309095693360232
+    "sbl_coverage_pct": 0.9142656975216744,
+    "ptl_coverage_pct": 0.8113931190073322
   },
   "sbl_stations": [
     {
@@ -1896,7 +1896,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T16:02:48.865Z",
-        "age_minutes": 1058,
+        "age_minutes": 1070,
         "bin_status": "ACTIVE"
       },
       {
@@ -1908,7 +1908,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T15:57:31.854Z",
-        "age_minutes": 1064,
+        "age_minutes": 1075,
         "bin_status": "ACTIVE"
       },
       {
@@ -1920,7 +1920,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T22:52:16.733Z",
-        "age_minutes": 649,
+        "age_minutes": 660,
         "bin_status": "ACTIVE"
       },
       {
@@ -1932,7 +1932,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T02:44:12.174Z",
-        "age_minutes": 417,
+        "age_minutes": 428,
         "bin_status": "ACTIVE"
       },
       {
@@ -1944,7 +1944,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T14:07:12.005Z",
-        "age_minutes": 1174,
+        "age_minutes": 1185,
         "bin_status": "ACTIVE"
       },
       {
@@ -1956,7 +1956,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T02:59:05.256Z",
-        "age_minutes": 402,
+        "age_minutes": 413,
         "bin_status": "ACTIVE"
       },
       {
@@ -1968,7 +1968,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:40:18.799Z",
-        "age_minutes": 361,
+        "age_minutes": 372,
         "bin_status": "ACTIVE"
       },
       {
@@ -1980,7 +1980,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:06:10.035Z",
-        "age_minutes": 395,
+        "age_minutes": 406,
         "bin_status": "ACTIVE"
       },
       {
@@ -1992,7 +1992,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T10:06:41.463Z",
-        "age_minutes": 1415,
+        "age_minutes": 1426,
         "bin_status": "ACTIVE"
       },
       {
@@ -2004,7 +2004,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T18:44:55.528Z",
-        "age_minutes": 896,
+        "age_minutes": 907,
         "bin_status": "ACTIVE"
       },
       {
@@ -2016,7 +2016,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:43:12.916Z",
-        "age_minutes": 358,
+        "age_minutes": 369,
         "bin_status": "ACTIVE"
       },
       {
@@ -2028,7 +2028,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T17:34:50.470Z",
-        "age_minutes": 966,
+        "age_minutes": 978,
         "bin_status": "ACTIVE"
       },
       {
@@ -2040,7 +2040,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T05:21:15.577Z",
-        "age_minutes": 260,
+        "age_minutes": 271,
         "bin_status": "ACTIVE"
       },
       {
@@ -2052,7 +2052,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:07:07.489Z",
-        "age_minutes": 394,
+        "age_minutes": 405,
         "bin_status": "ACTIVE"
       },
       {
@@ -2064,7 +2064,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T02:40:36.368Z",
-        "age_minutes": 421,
+        "age_minutes": 432,
         "bin_status": "ACTIVE"
       },
       {
@@ -2076,7 +2076,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T02:55:50.237Z",
-        "age_minutes": 405,
+        "age_minutes": 417,
         "bin_status": "ACTIVE"
       },
       {
@@ -2088,7 +2088,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T05:14:02.508Z",
-        "age_minutes": 267,
+        "age_minutes": 278,
         "bin_status": "ACTIVE"
       },
       {
@@ -2100,7 +2100,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T11:35:05.617Z",
-        "age_minutes": 1326,
+        "age_minutes": 1337,
         "bin_status": "ACTIVE"
       },
       {
@@ -2112,7 +2112,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:55:04.831Z",
-        "age_minutes": 286,
+        "age_minutes": 297,
         "bin_status": "ACTIVE"
       },
       {
@@ -2124,7 +2124,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T05:44:48.153Z",
-        "age_minutes": 236,
+        "age_minutes": 248,
         "bin_status": "ACTIVE"
       },
       {
@@ -2136,7 +2136,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T05:25:57.592Z",
-        "age_minutes": 255,
+        "age_minutes": 266,
         "bin_status": "ACTIVE"
       },
       {
@@ -2148,7 +2148,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:40:18.799Z",
-        "age_minutes": 361,
+        "age_minutes": 372,
         "bin_status": "ACTIVE"
       },
       {
@@ -2160,7 +2160,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T02:41:50.753Z",
-        "age_minutes": 419,
+        "age_minutes": 431,
         "bin_status": "ACTIVE"
       },
       {
@@ -2172,7 +2172,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T06:19:08.997Z",
-        "age_minutes": 1642,
+        "age_minutes": 1653,
         "bin_status": "ACTIVE"
       },
       {
@@ -2184,7 +2184,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:45:21.937Z",
-        "age_minutes": 296,
+        "age_minutes": 307,
         "bin_status": "ACTIVE"
       },
       {
@@ -2196,7 +2196,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:47:19.320Z",
-        "age_minutes": 294,
+        "age_minutes": 305,
         "bin_status": "ACTIVE"
       },
       {
@@ -2208,7 +2208,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:04:01.735Z",
-        "age_minutes": 397,
+        "age_minutes": 408,
         "bin_status": "ACTIVE"
       },
       {
@@ -2220,7 +2220,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T05:03:38.746Z",
-        "age_minutes": 278,
+        "age_minutes": 289,
         "bin_status": "ACTIVE"
       },
       {
@@ -2232,7 +2232,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:40:58.758Z",
-        "age_minutes": 300,
+        "age_minutes": 311,
         "bin_status": "ACTIVE"
       },
       {
@@ -2244,7 +2244,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:20:21.328Z",
-        "age_minutes": 381,
+        "age_minutes": 392,
         "bin_status": "ACTIVE"
       },
       {
@@ -2256,7 +2256,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:38:22.201Z",
-        "age_minutes": 303,
+        "age_minutes": 314,
         "bin_status": "ACTIVE"
       },
       {
@@ -2268,7 +2268,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T23:27:57.585Z",
-        "age_minutes": 613,
+        "age_minutes": 624,
         "bin_status": "ACTIVE"
       },
       {
@@ -2280,7 +2280,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T02:54:10.031Z",
-        "age_minutes": 407,
+        "age_minutes": 418,
         "bin_status": "ACTIVE"
       },
       {
@@ -2292,7 +2292,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T11:35:05.617Z",
-        "age_minutes": 1326,
+        "age_minutes": 1337,
         "bin_status": "ACTIVE"
       },
       {
@@ -2304,7 +2304,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T02:59:54.424Z",
-        "age_minutes": 401,
+        "age_minutes": 412,
         "bin_status": "ACTIVE"
       },
       {
@@ -2316,7 +2316,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:04:01.735Z",
-        "age_minutes": 397,
+        "age_minutes": 408,
         "bin_status": "ACTIVE"
       },
       {
@@ -2328,7 +2328,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:42:57.234Z",
-        "age_minutes": 298,
+        "age_minutes": 309,
         "bin_status": "ACTIVE"
       },
       {
@@ -2340,7 +2340,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:47:11.828Z",
-        "age_minutes": 294,
+        "age_minutes": 305,
         "bin_status": "ACTIVE"
       },
       {
@@ -2352,7 +2352,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T11:35:05.617Z",
-        "age_minutes": 1326,
+        "age_minutes": 1337,
         "bin_status": "ACTIVE"
       },
       {
@@ -2364,7 +2364,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:45:56.188Z",
-        "age_minutes": 295,
+        "age_minutes": 306,
         "bin_status": "ACTIVE"
       },
       {
@@ -2376,7 +2376,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T16:14:10.147Z",
-        "age_minutes": 1047,
+        "age_minutes": 1058,
         "bin_status": "ACTIVE"
       },
       {
@@ -2388,7 +2388,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T23:12:12.276Z",
-        "age_minutes": 629,
+        "age_minutes": 640,
         "bin_status": "ACTIVE"
       }
     ],
@@ -2401,17 +2401,17 @@
       "stale_hus": 42
     }
   },
-  "calculation_timestamp": "2025-09-10T09:41:46.197Z",
+  "calculation_timestamp": "2025-09-10T09:52:52.591Z",
   "macros": {
     "waveInfo": {
       "wave_id": "1",
-      "start_time_iso": "Mon Sep 08 2025 23:59:50 GMT+0530 (India Standard Time)",
-      "cutoff_time_iso": "Tue Sep 09 2025 16:47:14 GMT+0530 (India Standard Time)",
-      "total_orders": 2822,
-      "total_order_lines": 22070,
-      "total_order_value": 3032375,
-      "split_lines_sbl": 10669,
-      "split_lines_ptl": 11401,
+      "start_time_iso": "Wed Sep 10 2025 11:34:13 GMT+0530 (India Standard Time)",
+      "cutoff_time_iso": "Wed Sep 10 2025 15:34:13 GMT+0530 (India Standard Time)",
+      "total_orders": 2300,
+      "total_order_lines": 20284,
+      "total_order_value": 2835505,
+      "split_lines_sbl": 11419,
+      "split_lines_ptl": 8865,
       "split_lines_fc": 1227
     },
     "stageTargets": {
@@ -2453,8 +2453,8 @@
       "starvation_Rmin_factor_of_target": 0.5,
       "ptl_shortfall_min_factor": 0.1
     },
-    "startTime": "2025-09-08T18:29:50.000Z",
-    "cutoffTime": "2025-09-09T11:17:14.000Z",
+    "startTime": "2025-09-10T06:04:13.000Z",
+    "cutoffTime": "2025-09-10T10:04:13.000Z",
     "expectedDuration": {
       "sbl": 2.5,
       "ptl": 2.5,
