@@ -5,6 +5,7 @@ import { ProcessedMacros } from './macros-processor';
 import { getLoadingStatusFromFile, getSBLTimelineFromFile, getPTLTimelineFromFile, getStationCompletionFromFile, getSBLTableLinesFromFile, getPTLTableLinesFromFile, getSecondarySortationFromFile, getSBLSKUsFromFile, getSBLInfeedFromFile } from '../../server/datasource/file-adapter';
 import { STAGE_TARGETS, THRESHOLDS } from '../config/stage-targets';
 import { BlobStorage } from '../blob-storage';
+import { SimpleStorage } from '../simple-storage';
 
 export class ArtifactGenerator {
   private derivedDir: string;
@@ -24,10 +25,23 @@ export class ArtifactGenerator {
       // Ensure derived directory exists
       await mkdir(this.derivedDir, { recursive: true });
       
-      // Use blob storage to get the best available files
-      const blobStorage = BlobStorage.getInstance();
-      const files = await blobStorage.getBestAvailableFiles();
-      console.log('[ARTIFACT_GENERATOR] Using files from blob storage:', files.map(f => f.filename));
+      // Try blob storage first, fallback to simple storage
+      let storage;
+      try {
+        if (process.env.BLOB_READ_WRITE_TOKEN) {
+          storage = BlobStorage.getInstance();
+          console.log('[ARTIFACT_GENERATOR] Using Vercel Blob storage');
+        } else {
+          throw new Error('No blob storage token available');
+        }
+      } catch (error) {
+        console.log('[ARTIFACT_GENERATOR] Blob storage not available, using simple storage:', error);
+        storage = SimpleStorage.getInstance();
+        await storage.loadRepositoryFiles();
+      }
+      
+      const files = await storage.getBestAvailableFiles();
+      console.log('[ARTIFACT_GENERATOR] Using files from storage:', files.map(f => f.filename));
       
       // Write storage files to temp directory for file adapter to use
       const tempDir = join(process.cwd(), 'temp');

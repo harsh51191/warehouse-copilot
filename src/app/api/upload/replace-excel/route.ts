@@ -6,6 +6,7 @@ import { validateExcelFile, EXCEL_SCHEMAS } from '@/lib/excel-validation';
 import { ArtifactGenerator } from '@/lib/analytics/artifact-generator';
 import { getProcessedMacros } from '@/server/datasource/macros-adapter';
 import { BlobStorage } from '@/lib/blob-storage';
+import { SimpleStorage } from '@/lib/simple-storage';
 
 export async function POST(request: NextRequest) {
   try {
@@ -101,21 +102,38 @@ export async function POST(request: NextRequest) {
       console.warn(`Upload proceeding with ${validFiles.length} valid files, ${invalidFiles.length} files will be skipped due to validation errors`);
     }
 
-    // Use Vercel Blob storage for file persistence (required for Vercel)
-    const blobStorage = BlobStorage.getInstance();
-    console.log('[UPLOAD] Using Vercel Blob storage for file persistence');
+    // Try Vercel Blob storage first, fallback to simple storage
+    let storage;
+    let useBlobStorage = false;
+    
+    try {
+      // Check if blob storage token is available
+      if (process.env.BLOB_READ_WRITE_TOKEN) {
+        storage = BlobStorage.getInstance();
+        useBlobStorage = true;
+        console.log('[UPLOAD] Using Vercel Blob storage for file persistence');
+      } else {
+        throw new Error('No blob storage token available');
+      }
+    } catch (error) {
+      console.log('[UPLOAD] Blob storage not available, using simple storage:', error);
+      storage = SimpleStorage.getInstance();
+      await storage.loadRepositoryFiles();
+      useBlobStorage = false;
+    }
+    
     console.log('VERCEL env:', process.env.VERCEL);
     console.log('NODE_ENV:', process.env.NODE_ENV);
 
-    // Clear existing files from blob storage
+    // Clear existing files
     try {
-      await blobStorage.clearAllFiles();
-      console.log('[UPLOAD] Cleared existing files from blob storage');
+      await storage.clearAllFiles();
+      console.log('[UPLOAD] Cleared existing files from storage');
     } catch (error) {
-      console.warn('[UPLOAD] Could not clear existing files from blob storage:', error);
+      console.warn('[UPLOAD] Could not clear existing files:', error);
     }
 
-    // Store new files in blob storage
+    // Store new files
     const filesToStore = fileContents.map(fileData => ({
       filename: fileData.filename,
       originalName: fileData.filename,
@@ -123,7 +141,7 @@ export async function POST(request: NextRequest) {
       detectedType: fileData.detectedType!
     }));
     
-    const storedFiles = await blobStorage.storeFiles(filesToStore);
+    const storedFiles = await storage.storeFiles(filesToStore);
     
     const savedFiles = storedFiles.map(storedFile => {
       const schema = EXCEL_SCHEMAS[storedFile.detectedType];
@@ -132,11 +150,11 @@ export async function POST(request: NextRequest) {
         savedName: storedFile.filename,
         type: storedFile.detectedType,
         description: schema.description,
-        url: storedFile.url
+        url: useBlobStorage ? (storedFile as any).url : 'in-memory'
       };
     });
     
-    console.log('[UPLOAD] Successfully stored', savedFiles.length, 'files in Vercel Blob');
+    console.log('[UPLOAD] Successfully stored', savedFiles.length, 'files using', useBlobStorage ? 'Vercel Blob' : 'Simple Storage');
 
     // Generate dashboard artifacts after successful upload
     let artifactsGenerated = false;

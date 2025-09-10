@@ -1,7 +1,7 @@
 {
   "overall_summary": {
-    "projected_finish_iso": "2025-09-10T03:11:10.486Z",
-    "buffer_minutes": -2365,
+    "projected_finish_iso": "2025-09-10T03:14:05.669Z",
+    "buffer_minutes": -2368,
     "otif_risk": "HIGH",
     "line_coverage_pct": 1,
     "wave_status": "LATE",
@@ -712,7 +712,7 @@
     }
   },
   "sbl_infeed": null,
-  "calculation_timestamp": "2025-09-10T03:11:10.489Z",
+  "calculation_timestamp": "2025-09-10T03:14:05.671Z",
   "macros": {
     "waveInfo": {
       "wave_id": "1",
