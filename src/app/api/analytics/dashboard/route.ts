@@ -89,10 +89,18 @@ export async function GET() {
       
       console.log('[DASHBOARD API] Successfully loaded artifacts, SBL rate:', artifacts.sbl_stream?.ema_lph);
       
-      return NextResponse.json({
+      // Add cache-busting headers to ensure fresh data
+      const response = NextResponse.json({
         success: true,
-        data: artifacts
+        data: artifacts,
+        generated_at: artifacts.calculation_timestamp,
+        api_timestamp: new Date().toISOString()
       });
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      response.headers.set('Last-Modified', new Date().toUTCString());
+      return response;
     } catch (fileError) {
       console.log('[DASHBOARD API] File read error:', fileError instanceof Error ? fileError.message : String(fileError));
       // If artifacts don't exist, return empty state

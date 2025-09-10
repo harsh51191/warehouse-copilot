@@ -404,13 +404,23 @@ function routeQueryToReply(q:string){
 async function fetchDashboardArtifacts() {
   try {
     console.log('Fetching dashboard artifacts...');
-    const response = await fetch('/api/analytics/dashboard');
+    // Add cache-busting parameter to ensure fresh data
+    const cacheBuster = `?t=${Date.now()}`;
+    const response = await fetch(`/api/analytics/dashboard${cacheBuster}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
     console.log('Dashboard response status:', response.status);
     if (!response.ok) throw new Error(`Failed to fetch dashboard artifacts: ${response.status}`);
     const data = await response.json();
     console.log('Dashboard data received:', data);
     console.log('Overall summary:', data.data?.overall_summary);
     console.log('Macros:', data.data?.macros);
+    console.log('Generated at:', data.generated_at);
+    console.log('API timestamp:', data.api_timestamp);
     return data.data || null;
   } catch (error) {
     console.error('Error fetching dashboard artifacts:', error);
