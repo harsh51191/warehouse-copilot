@@ -52,18 +52,48 @@ export async function GET() {
           }
         }
         
-        // Always regenerate artifacts to ensure they're up to date
-        console.log('[DASHBOARD API] Regenerating artifacts...');
-        const { ArtifactGenerator } = await import('@/lib/analytics/artifact-generator');
-        const { getProcessedMacros } = await import('@/server/datasource/macros-adapter');
+        // Check if artifacts need regeneration by comparing file timestamps
+        const artifactsPath = join(derivedDir, 'dashboard_artifacts.json');
+        let shouldRegenerate = false;
         
-        const macros = await getProcessedMacros();
-        if (macros) {
-          const generator = new ArtifactGenerator();
-          await generator.generateDashboardArtifacts(macros);
-          console.log('[DASHBOARD API] Artifacts regenerated successfully');
+        try {
+          const fs = await import('fs');
+          if (fs.existsSync(artifactsPath)) {
+            const artifactsStats = fs.statSync(artifactsPath);
+            const excelFiles = fs.readdirSync(tmpDataDir).filter(f => f.endsWith('.xlsx'));
+            
+            // Check if any Excel file is newer than artifacts
+            for (const excelFile of excelFiles) {
+              const excelStats = fs.statSync(join(tmpDataDir, excelFile));
+              if (excelStats.mtime > artifactsStats.mtime) {
+                console.log('[DASHBOARD API] Excel file is newer than artifacts:', excelFile);
+                shouldRegenerate = true;
+                break;
+              }
+            }
+          } else {
+            shouldRegenerate = true;
+          }
+        } catch (error) {
+          console.log('[DASHBOARD API] Error checking file timestamps:', error);
+          shouldRegenerate = true;
+        }
+        
+        if (shouldRegenerate) {
+          console.log('[DASHBOARD API] Regenerating artifacts...');
+          const { ArtifactGenerator } = await import('@/lib/analytics/artifact-generator');
+          const { getProcessedMacros } = await import('@/server/datasource/macros-adapter');
+          
+          const macros = await getProcessedMacros();
+          if (macros) {
+            const generator = new ArtifactGenerator();
+            await generator.generateDashboardArtifacts(macros);
+            console.log('[DASHBOARD API] Artifacts regenerated successfully');
+          } else {
+            console.log('[DASHBOARD API] No macros found, skipping artifact generation');
+          }
         } else {
-          console.log('[DASHBOARD API] No macros found, skipping artifact generation');
+          console.log('[DASHBOARD API] Artifacts are up to date, skipping regeneration');
         }
       } catch (e) {
         console.log('[DASHBOARD API] Error setting up data:', e);
@@ -84,6 +114,16 @@ export async function GET() {
     }
     
     try {
+      // Check file modification time
+      const fs = await import('fs');
+      const stats = fs.statSync(artifactsPath);
+      console.log('[DASHBOARD API] Artifacts file stats:', {
+        path: artifactsPath,
+        size: stats.size,
+        modified: stats.mtime.toISOString(),
+        accessed: stats.atime.toISOString()
+      });
+      
       const artifactsData = await readFile(artifactsPath, 'utf-8');
       const artifacts: DashboardArtifacts = JSON.parse(artifactsData);
       
