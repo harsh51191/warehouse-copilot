@@ -5,6 +5,7 @@ import { readFirstSheetAsJsonFromBuffer } from '@/lib/xlsx';
 import { validateExcelFile, EXCEL_SCHEMAS } from '@/lib/excel-validation';
 import { ArtifactGenerator } from '@/lib/analytics/artifact-generator';
 import { getProcessedMacros } from '@/server/datasource/macros-adapter';
+import { DataStorage } from '@/lib/storage';
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,117 +101,33 @@ export async function POST(request: NextRequest) {
       console.warn(`Upload proceeding with ${validFiles.length} valid files, ${invalidFiles.length} files will be skipped due to validation errors`);
     }
 
-    // Get data directory - use /tmp for Vercel compatibility
-    const dataDir = process.env.VERCEL === '1' 
-      ? '/tmp/data' 
-      : (process.env.DATA_DIR || join(process.cwd(), 'data'));
-    console.log('Data directory:', dataDir);
+    // Use storage system for Vercel compatibility
+    const storage = DataStorage.getInstance();
+    console.log('[UPLOAD] Using storage system for Vercel compatibility');
     console.log('VERCEL env:', process.env.VERCEL);
     console.log('NODE_ENV:', process.env.NODE_ENV);
-    
-    // On Vercel, ensure /tmp/data exists and is writable
-    if (process.env.VERCEL === '1') {
-      try {
-        const fs = await import('fs');
-        if (!fs.existsSync('/tmp/data')) {
-          fs.mkdirSync('/tmp/data', { recursive: true });
-          console.log('[UPLOAD] Created /tmp/data directory');
-        }
-        
-        // Test write permissions
-        const testFile = '/tmp/data/test.txt';
-        fs.writeFileSync(testFile, 'test');
-        fs.unlinkSync(testFile);
-        console.log('[UPLOAD] /tmp/data is writable');
-      } catch (error) {
-        console.error('[UPLOAD] Error setting up /tmp/data:', error);
-        return NextResponse.json({
-          success: false,
-          error: 'Failed to set up data directory on Vercel'
-        }, { status: 500 });
-      }
-    }
-    
-    // Ensure directory exists
-    try {
-      await import('fs').then(fs => fs.promises.mkdir(dataDir, { recursive: true }));
-    } catch (error) {
-      console.warn('Could not create data directory:', error);
-    }
-    
-    // Clear existing Excel files
-    try {
-      const existingFiles = await readdir(dataDir);
-      const excelFiles = existingFiles.filter(f => f.endsWith('.xlsx'));
-      console.log('Found existing Excel files:', excelFiles);
-      
-      for (const file of excelFiles) {
-        const filePath = join(dataDir, file);
-        console.log('Deleting file:', filePath);
-        await unlink(filePath);
-      }
-    } catch (error) {
-      console.warn('Could not clear existing files:', error);
-      // Continue anyway - this is not critical
-    }
 
-    // Save new files
-    const savedFiles = [];
-    console.log('[UPLOAD] About to save', fileContents.length, 'files to', dataDir);
+    // Store files in memory (persists for this session)
+    const filesToStore = fileContents.map(fileData => ({
+      filename: fileData.filename,
+      originalName: fileData.filename,
+      buffer: fileData.buffer,
+      detectedType: fileData.detectedType!
+    }));
     
-    // List existing files before saving
-    try {
-      const existingFiles = await readdir(dataDir);
-      console.log('[UPLOAD] Files in dataDir before saving:', existingFiles);
-    } catch (error) {
-      console.log('[UPLOAD] Could not list existing files:', error);
-    }
+    await storage.storeFiles(filesToStore);
     
-    for (const fileData of fileContents) {
+    const savedFiles = fileContents.map(fileData => {
       const schema = EXCEL_SCHEMAS[fileData.detectedType!];
-      const newFilename = `${schema.filename}_${new Date().toISOString().replace(/[:.]/g, '-')}.xlsx`;
-      const filePath = join(dataDir, newFilename);
-      
-      console.log('[UPLOAD] Saving file:', {
+      return {
         originalName: fileData.filename,
-        newFilename: newFilename,
-        filePath: filePath,
-        bufferSize: fileData.buffer.length,
-        detectedType: fileData.detectedType
-      });
-      
-      await writeFile(filePath, fileData.buffer);
-      
-      // Verify file was saved
-      try {
-        const fs = await import('fs');
-        const stats = fs.statSync(filePath);
-        console.log('[UPLOAD] File saved successfully:', {
-          path: filePath,
-          size: stats.size,
-          modified: stats.mtime.toISOString()
-        });
-      } catch (error) {
-        console.error('[UPLOAD] Error verifying saved file:', error);
-      }
-      
-      savedFiles.push({
-        originalName: fileData.filename,
-        savedName: newFilename,
+        savedName: fileData.filename,
         type: fileData.detectedType,
         description: schema.description
-      });
-    }
+      };
+    });
     
-    // List files after saving
-    try {
-      const filesAfterSaving = await readdir(dataDir);
-      console.log('[UPLOAD] Files in dataDir after saving:', filesAfterSaving);
-    } catch (error) {
-      console.log('[UPLOAD] Could not list files after saving:', error);
-    }
-    
-    console.log('[UPLOAD] Successfully saved', savedFiles.length, 'files');
+    console.log('[UPLOAD] Successfully stored', savedFiles.length, 'files in memory');
 
     // Generate dashboard artifacts after successful upload
     let artifactsGenerated = false;

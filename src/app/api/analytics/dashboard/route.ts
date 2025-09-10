@@ -5,108 +5,30 @@ import { DashboardArtifacts } from '@/lib/analytics/dashboard-artifacts';
 
 export async function GET() {
   try {
-    // Use /tmp for Vercel compatibility in production
-    const derivedDir = process.env.VERCEL === '1' 
-      ? '/tmp/data/derived' 
-      : join(process.cwd(), 'data', 'derived');
+    // Use repository data directory for Vercel compatibility
+    const derivedDir = join(process.cwd(), 'data', 'derived');
     const artifactsPath = join(derivedDir, 'dashboard_artifacts.json');
     
     console.log('[DASHBOARD API] Looking for artifacts at:', artifactsPath);
     console.log('[DASHBOARD API] VERCEL env:', process.env.VERCEL);
     console.log('[DASHBOARD API] NODE_ENV:', process.env.NODE_ENV);
     
-    // On Vercel, copy Excel files from repository to /tmp/data if they don't exist
-    if (process.env.VERCEL === '1') {
-      try {
-        const fs = await import('fs');
-        const tmpDataDir = '/tmp/data';
-        const repoDataDir = join(process.cwd(), 'data');
-        
-        // Check if /tmp/data exists and has Excel files
-        const tmpDataExists = fs.existsSync(tmpDataDir);
-        const tmpDataFiles = tmpDataExists ? fs.readdirSync(tmpDataDir).filter(f => f.endsWith('.xlsx')) : [];
-        
-        console.log('[DASHBOARD API] /tmp/data exists:', tmpDataExists);
-        console.log('[DASHBOARD API] Excel files in /tmp/data:', tmpDataFiles.length);
-        console.log('[DASHBOARD API] Excel files in /tmp/data:', tmpDataFiles);
-        
-        // Always use /tmp/data if it has files, otherwise fall back to repository
-        if (tmpDataFiles.length > 0) {
-          console.log('[DASHBOARD API] Using uploaded files from /tmp/data');
-          // Use the uploaded files directly
-        } else {
-          console.log('[DASHBOARD API] No uploaded files found, copying from repository to /tmp/data...');
-          
-          // Ensure /tmp/data exists
-          fs.mkdirSync(tmpDataDir, { recursive: true });
-          
-          // Copy Excel files from repository
-          const repoFiles = fs.readdirSync(repoDataDir).filter(f => f.endsWith('.xlsx'));
-          console.log('[DASHBOARD API] Found Excel files in repo:', repoFiles);
-          
-          for (const file of repoFiles) {
-            const srcPath = join(repoDataDir, file);
-            const destPath = join(tmpDataDir, file);
-            fs.copyFileSync(srcPath, destPath);
-            console.log('[DASHBOARD API] Copied:', file);
-          }
-        }
-        
-        // Check if artifacts need regeneration by comparing file timestamps
-        const artifactsPath = join(derivedDir, 'dashboard_artifacts.json');
-        let shouldRegenerate = false;
-        
-        try {
-          const fs = await import('fs');
-          if (fs.existsSync(artifactsPath)) {
-            const artifactsStats = fs.statSync(artifactsPath);
-            const excelFiles = fs.readdirSync(tmpDataDir).filter(f => f.endsWith('.xlsx'));
-            
-            console.log('[DASHBOARD API] Artifacts modified:', artifactsStats.mtime.toISOString());
-            console.log('[DASHBOARD API] Excel files in /tmp/data:', excelFiles);
-            
-            // Check if any Excel file is newer than artifacts
-            for (const excelFile of excelFiles) {
-              const excelStats = fs.statSync(join(tmpDataDir, excelFile));
-              console.log('[DASHBOARD API] Excel file:', excelFile, 'modified:', excelStats.mtime.toISOString());
-              if (excelStats.mtime > artifactsStats.mtime) {
-                console.log('[DASHBOARD API] Excel file is newer than artifacts:', excelFile);
-                shouldRegenerate = true;
-                break;
-              }
-            }
-          } else {
-            console.log('[DASHBOARD API] No artifacts file found, will regenerate');
-            shouldRegenerate = true;
-          }
-        } catch (error) {
-          console.log('[DASHBOARD API] Error checking file timestamps:', error);
-          shouldRegenerate = true;
-        }
-        
-        // FORCE REGENERATION FOR DEBUGGING - REMOVE THIS LATER
-        shouldRegenerate = true;
-        console.log('[DASHBOARD API] FORCING REGENERATION FOR DEBUGGING');
-        
-        if (shouldRegenerate) {
-          console.log('[DASHBOARD API] Regenerating artifacts...');
-          const { ArtifactGenerator } = await import('@/lib/analytics/artifact-generator');
-          const { getProcessedMacros } = await import('@/server/datasource/macros-adapter');
-          
-          const macros = await getProcessedMacros();
-          if (macros) {
-            const generator = new ArtifactGenerator();
-            await generator.generateDashboardArtifacts(macros);
-            console.log('[DASHBOARD API] Artifacts regenerated successfully');
-          } else {
-            console.log('[DASHBOARD API] No macros found, skipping artifact generation');
-          }
-        } else {
-          console.log('[DASHBOARD API] Artifacts are up to date, skipping regeneration');
-        }
-      } catch (e) {
-        console.log('[DASHBOARD API] Error setting up data:', e);
+    // Always regenerate artifacts to ensure fresh data
+    try {
+      console.log('[DASHBOARD API] Regenerating artifacts to ensure fresh data...');
+      const { ArtifactGenerator } = await import('@/lib/analytics/artifact-generator');
+      const { getProcessedMacros } = await import('@/server/datasource/macros-adapter');
+      
+      const macros = await getProcessedMacros();
+      if (macros) {
+        const generator = new ArtifactGenerator();
+        await generator.generateDashboardArtifacts(macros);
+        console.log('[DASHBOARD API] Artifacts regenerated successfully');
+      } else {
+        console.log('[DASHBOARD API] No macros found, skipping artifact generation');
       }
+    } catch (e) {
+      console.log('[DASHBOARD API] Error regenerating artifacts:', e);
     }
     
     // Check if directory exists

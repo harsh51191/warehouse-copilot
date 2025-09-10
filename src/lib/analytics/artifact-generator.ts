@@ -4,18 +4,19 @@ import { DashboardArtifacts, OverallSummary, SBLStation, SBLStream, PTLStream, P
 import { ProcessedMacros } from './macros-processor';
 import { getLoadingStatusFromFile, getSBLTimelineFromFile, getPTLTimelineFromFile, getStationCompletionFromFile, getSBLTableLinesFromFile, getPTLTableLinesFromFile, getSecondarySortationFromFile, getSBLSKUsFromFile, getSBLInfeedFromFile } from '../../server/datasource/file-adapter';
 import { STAGE_TARGETS, THRESHOLDS } from '../config/stage-targets';
+import { DataStorage } from '../storage';
+import { StorageAdapter } from '../storage-adapter';
 
 export class ArtifactGenerator {
   private derivedDir: string;
   private logger: AnalyticsLogger;
 
   constructor() {
-    // Use /tmp for Vercel compatibility in production
-    this.derivedDir = process.env.VERCEL === '1' 
-      ? '/tmp/data/derived' 
-      : join(process.cwd(), 'data', 'derived');
+    // Use repository data directory for Vercel compatibility
+    this.derivedDir = join(process.cwd(), 'data', 'derived');
     this.logger = new AnalyticsLogger();
   }
+
 
   async generateDashboardArtifacts(macros: ProcessedMacros): Promise<DashboardArtifacts> {
     this.logger.logCalculation('artifact_generation_start', { macros }, null, { timestamp: new Date().toISOString() });
@@ -24,30 +25,21 @@ export class ArtifactGenerator {
       // Ensure derived directory exists
       await mkdir(this.derivedDir, { recursive: true });
       
-      // Log which data directory is being used
-      const dataDir = process.env.VERCEL === '1' ? '/tmp/data' : join(process.cwd(), 'data');
-      console.log('[ARTIFACT_GENERATOR] Using data directory:', dataDir);
-      
-      // Check what files exist in the data directory
-      try {
-        const fs = await import('fs');
-        const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.xlsx'));
-        console.log('[ARTIFACT_GENERATOR] Excel files found in data directory:', files);
-      } catch (error) {
-        console.log('[ARTIFACT_GENERATOR] Error listing files:', error);
-      }
+      // Use storage adapter to get data from uploaded files or repository
+      const storageAdapter = new StorageAdapter();
+      console.log('[ARTIFACT_GENERATOR] Using storage adapter for data loading');
 
       // Load all data sources (handle missing files gracefully)
-    const [loadingData, sblTimeline, ptlTimeline, stationCompletion, sblTableLines, ptlTableLines, secondarySortation, sblSKUs] = await Promise.all([
-      getLoadingStatusFromFile().catch(() => ({ byTrip: [], summary: { totalAssigned: 0, totalLoaded: 0 } })),
-      getSBLTimelineFromFile().catch(() => ({ timeline: [], summary: { totalLines: 0, averageProductivity: 0 } })),
-      getPTLTimelineFromFile().catch(() => ({ timeline: [], summary: { totalLines: 0, averageProductivity: 0 } })),
-      getStationCompletionFromFile().catch(() => ({ stations: [], summary: { totalDemandLines: 0, totalPackedLines: 0 } })),
-      getSBLTableLinesFromFile().catch(() => ({ intervals: [], summary: { totalIntervals: 0, totalLines: 0, averageLinesPerInterval: 0 } })),
-      getPTLTableLinesFromFile().catch(() => ({ intervals: [], summary: { totalIntervals: 0, totalLines: 0, averageLinesPerInterval: 0 } })),
-      getSecondarySortationFromFile().catch(() => ({ records: [], summary: { totalRecords: 0, totalCrates: 0, totalQC: 0 } })),
-      getSBLSKUsFromFile().catch(() => ({ skus: [], summary: { totalSKUs: 0, pendingSKUs: 0, completedSKUs: 0, totalLines: 0, pendingLines: 0, completionRate: 0 } }))
-    ]);
+      const [loadingData, sblTimeline, ptlTimeline, stationCompletion, sblTableLines, ptlTableLines, secondarySortation, sblSKUs] = await Promise.all([
+        storageAdapter.getLoadingStatus().catch(() => ({ byTrip: [], summary: { totalAssigned: 0, totalLoaded: 0 } })),
+        storageAdapter.getSBLTimeline().catch(() => ({ timeline: [], summary: { totalLines: 0, averageProductivity: 0 } })),
+        storageAdapter.getPTLTimeline().catch(() => ({ timeline: [], summary: { totalLines: 0, averageProductivity: 0 } })),
+        storageAdapter.getStationCompletion().catch(() => ({ stations: [], summary: { totalDemandLines: 0, totalPackedLines: 0 } })),
+        storageAdapter.getSBLTableLines().catch(() => ({ intervals: [], summary: { totalIntervals: 0, totalLines: 0, averageLinesPerInterval: 0 } })),
+        storageAdapter.getPTLTableLines().catch(() => ({ intervals: [], summary: { totalIntervals: 0, totalLines: 0, averageLinesPerInterval: 0 } })),
+        storageAdapter.getSecondarySortation().catch(() => ({ records: [], summary: { totalRecords: 0, totalCrates: 0, totalQC: 0 } })),
+        storageAdapter.getSBLSKUs().catch(() => ({ skus: [], summary: { totalSKUs: 0, pendingSKUs: 0, completedSKUs: 0, totalLines: 0, pendingLines: 0, completionRate: 0 } }))
+      ]);
 
       this.logger.logCalculation('data_loaded', { 
         loadingTrips: loadingData.byTrip.length,
@@ -76,11 +68,12 @@ export class ArtifactGenerator {
       const ptlTotals = await this.generatePTLTotals(ptlTableLines);
       const trips = await this.generateTripRisks(loadingData, secondarySortation);
       console.log('[DEBUG] Generating SBL infeed data...');
-      let sblInfeed = null;
+      let sblInfeed: SBLInfeedData | null = null;
       try {
         console.log('[DEBUG] About to call generateSBLInfeedData');
-        sblInfeed = await generateSBLInfeedData();
-        console.log('[DEBUG] SBL infeed result:', sblInfeed ? `Data found - ${sblInfeed.skus?.length || 0} SKUs, ${sblInfeed.hus?.length || 0} HUs` : 'No data');
+        // TODO: Fix SBL infeed data generation
+        // sblInfeed = await this.generateSBLInfeedData(storageAdapter);
+        console.log('[DEBUG] SBL infeed result:', sblInfeed ? 'Data found' : 'No data');
       } catch (error) {
         console.error('[DEBUG] SBL infeed error:', error instanceof Error ? error.message : String(error));
         console.error('[DEBUG] SBL infeed stack:', error instanceof Error ? error.stack : 'No stack trace');

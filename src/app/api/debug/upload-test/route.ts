@@ -4,7 +4,7 @@ import { join } from 'path';
 
 export async function GET() {
   try {
-    const dataDir = process.env.VERCEL === '1' ? '/tmp/data' : join(process.cwd(), 'data');
+    const dataDir = join(process.cwd(), 'data');
     
     console.log('[UPLOAD TEST] Checking data directory:', dataDir);
     
@@ -45,7 +45,7 @@ export async function GET() {
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
-      dataDir: process.env.VERCEL === '1' ? '/tmp/data' : join(process.cwd(), 'data')
+      dataDir: join(process.cwd(), 'data')
     }, { status: 500 });
   }
 }

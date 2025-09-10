@@ -10,72 +10,29 @@ export async function POST(req: Request) {
 		const { question } = await req.json();
 		console.log('[AI API] Processing question:', question);
 		
-		// Use same path logic as dashboard API
-		const derivedDir = process.env.VERCEL === '1' 
-			? '/tmp/data/derived' 
-			: join(process.cwd(), 'data', 'derived');
+		// Use repository data directory for Vercel compatibility
+		const derivedDir = join(process.cwd(), 'data', 'derived');
 		const artifactsPath = join(derivedDir, 'dashboard_artifacts.json');
 		
 		console.log('[AI API] Looking for artifacts at:', artifactsPath);
 		console.log('[AI API] VERCEL env:', process.env.VERCEL);
 		
-		// On Vercel, ensure artifacts exist by calling dashboard API logic once
-		if (process.env.VERCEL === '1') {
-			console.log('[AI API] Running Vercel setup logic...');
-			try {
-				const fs = await import('fs');
-				const tmpDataDir = '/tmp/data';
-				const repoDataDir = join(process.cwd(), 'data');
-				
-				console.log('[AI API] Checking if /tmp/data exists...');
-				// Check if /tmp/data exists and has Excel files
-				const tmpDataExists = fs.existsSync(tmpDataDir);
-				const tmpDataFiles = tmpDataExists ? fs.readdirSync(tmpDataDir).filter(f => f.endsWith('.xlsx')) : [];
-				
-				console.log('[AI API] /tmp/data exists:', tmpDataExists);
-				console.log('[AI API] Excel files in /tmp/data:', tmpDataFiles.length);
-				console.log('[AI API] Excel files in /tmp/data:', tmpDataFiles);
-				
-				// Always use /tmp/data if it has files, otherwise fall back to repository
-				if (tmpDataFiles.length > 0) {
-					console.log('[AI API] Using uploaded files from /tmp/data');
-					// Use the uploaded files directly
-				} else {
-					console.log('[AI API] No uploaded files found, copying from repository to /tmp/data...');
-					
-					// Ensure /tmp/data exists
-					fs.mkdirSync(tmpDataDir, { recursive: true });
-					
-					// Copy Excel files from repository
-					const repoFiles = fs.readdirSync(repoDataDir).filter(f => f.endsWith('.xlsx'));
-					console.log('[AI API] Found Excel files in repo:', repoFiles);
-					
-					for (const file of repoFiles) {
-						const srcPath = join(repoDataDir, file);
-						const destPath = join(tmpDataDir, file);
-						fs.copyFileSync(srcPath, destPath);
-						console.log('[AI API] Copied:', file);
-					}
-				}
-				
-				// Always regenerate artifacts to ensure they're up to date
-				console.log('[AI API] Regenerating artifacts...');
-				const { ArtifactGenerator } = await import('@/lib/analytics/artifact-generator');
-				const { getProcessedMacros } = await import('@/server/datasource/macros-adapter');
-				
-				const macros = await getProcessedMacros();
-				if (macros) {
-					const generator = new ArtifactGenerator();
-					await generator.generateDashboardArtifacts(macros);
-					console.log('[AI API] Artifacts regenerated successfully');
-				} else {
-					console.log('[AI API] No macros found, skipping artifact generation');
-				}
-			} catch (e) {
-				console.log('[AI API] Error setting up data:', e);
+		// Always regenerate artifacts to ensure fresh data
+		try {
+			console.log('[AI API] Regenerating artifacts to ensure fresh data...');
+			const { ArtifactGenerator } = await import('@/lib/analytics/artifact-generator');
+			const { getProcessedMacros } = await import('@/server/datasource/macros-adapter');
+			
+			const macros = await getProcessedMacros();
+			if (macros) {
+				const generator = new ArtifactGenerator();
+				await generator.generateDashboardArtifacts(macros);
+				console.log('[AI API] Artifacts regenerated successfully');
+			} else {
+				console.log('[AI API] No macros found, skipping artifact generation');
 			}
-		} else {
-			console.log('[AI API] Not on Vercel, skipping setup logic');
+		} catch (e) {
+			console.log('[AI API] Error regenerating artifacts:', e);
 		}
 		
 		try {
