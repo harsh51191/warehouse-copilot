@@ -1,7 +1,7 @@
 {
-  "ema_lph": 76,
-  "last_hour_avg": 76,
-  "slope": 20.5,
-  "trend": "up",
+  "ema_lph": 53,
+  "last_hour_avg": 53,
+  "slope": -10.5,
+  "trend": "down",
   "health_color": "red"
 }

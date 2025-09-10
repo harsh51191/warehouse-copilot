@@ -102,59 +102,76 @@ export async function POST(request: NextRequest) {
       console.warn(`Upload proceeding with ${validFiles.length} valid files, ${invalidFiles.length} files will be skipped due to validation errors`);
     }
 
-    // Try Vercel Blob storage first, fallback to simple storage
-    let storage;
-    let useBlobStorage = false;
-    
-    try {
-      // Check if blob storage token is available
-      if (process.env.BLOB_READ_WRITE_TOKEN) {
-        storage = BlobStorage.getInstance();
-        useBlobStorage = true;
-        console.log('[UPLOAD] Using Vercel Blob storage for file persistence');
-      } else {
-        throw new Error('No blob storage token available');
-      }
-    } catch (error) {
-      console.log('[UPLOAD] Blob storage not available, using simple storage:', error);
-      storage = SimpleStorage.getInstance();
-      await storage.loadRepositoryFiles();
-      useBlobStorage = false;
-    }
-    
+    // Get data directory - use repository data directory for Vercel compatibility
+    const dataDir = join(process.cwd(), 'data');
+    console.log('Data directory:', dataDir);
     console.log('VERCEL env:', process.env.VERCEL);
     console.log('NODE_ENV:', process.env.NODE_ENV);
-
-    // Clear existing files
+    
+    // Ensure directory exists
     try {
-      await storage.clearAllFiles();
-      console.log('[UPLOAD] Cleared existing files from storage');
+      await import('fs').then(fs => fs.promises.mkdir(dataDir, { recursive: true }));
     } catch (error) {
-      console.warn('[UPLOAD] Could not clear existing files:', error);
+      console.warn('Could not create data directory:', error);
+    }
+    
+    // Clear existing Excel files
+    try {
+      const existingFiles = await readdir(dataDir);
+      const excelFiles = existingFiles.filter(f => f.endsWith('.xlsx'));
+      console.log('Found existing Excel files:', excelFiles);
+      
+      for (const file of excelFiles) {
+        const filePath = join(dataDir, file);
+        console.log('Deleting file:', filePath);
+        await unlink(filePath);
+      }
+    } catch (error) {
+      console.warn('Could not clear existing files:', error);
+      // Continue anyway - this is not critical
     }
 
-    // Store new files
-    const filesToStore = fileContents.map(fileData => ({
-      filename: fileData.filename,
-      originalName: fileData.filename,
-      buffer: fileData.buffer,
-      detectedType: fileData.detectedType!
-    }));
+    // Save new files
+    const savedFiles = [];
+    console.log('[UPLOAD] About to save', fileContents.length, 'files to', dataDir);
     
-    const storedFiles = await storage.storeFiles(filesToStore);
+    for (const fileData of fileContents) {
+      const schema = EXCEL_SCHEMAS[fileData.detectedType!];
+      const newFilename = `${schema.filename}_${new Date().toISOString().replace(/[:.]/g, '-')}.xlsx`;
+      const filePath = join(dataDir, newFilename);
+      
+      console.log('[UPLOAD] Saving file:', {
+        originalName: fileData.filename,
+        newFilename: newFilename,
+        filePath: filePath,
+        bufferSize: fileData.buffer.length,
+        detectedType: fileData.detectedType
+      });
+      
+      await writeFile(filePath, fileData.buffer);
+      
+      // Verify file was saved
+      try {
+        const fs = await import('fs');
+        const stats = fs.statSync(filePath);
+        console.log('[UPLOAD] File saved successfully:', {
+          path: filePath,
+          size: stats.size,
+          modified: stats.mtime.toISOString()
+        });
+      } catch (error) {
+        console.error('[UPLOAD] Error verifying saved file:', error);
+      }
+      
+      savedFiles.push({
+        originalName: fileData.filename,
+        savedName: newFilename,
+        type: fileData.detectedType,
+        description: schema.description
+      });
+    }
     
-    const savedFiles = storedFiles.map(storedFile => {
-      const schema = EXCEL_SCHEMAS[storedFile.detectedType];
-      return {
-        originalName: storedFile.originalName,
-        savedName: storedFile.filename,
-        type: storedFile.detectedType,
-        description: schema.description,
-        url: useBlobStorage ? (storedFile as any).url : 'in-memory'
-      };
-    });
-    
-    console.log('[UPLOAD] Successfully stored', savedFiles.length, 'files using', useBlobStorage ? 'Vercel Blob' : 'Simple Storage');
+    console.log('[UPLOAD] Successfully saved', savedFiles.length, 'files');
 
     // Generate dashboard artifacts after successful upload
     let artifactsGenerated = false;

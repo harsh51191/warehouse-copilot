@@ -1,14 +1,14 @@
 {
   "waveInfo": {
     "wave_id": "1",
-    "start_time_iso": "Sat Sep 06 2025 12:24:50 GMT+0530 (India Standard Time)",
-    "cutoff_time_iso": "Mon Sep 08 2025 17:16:14 GMT+0530 (India Standard Time)",
-    "total_orders": 1901,
-    "total_order_lines": 16221,
-    "total_order_value": 2354143,
-    "split_lines_sbl": 8671,
-    "split_lines_ptl": 7550,
-    "split_lines_fc": 667
+    "start_time_iso": "Mon Sep 08 2025 23:59:50 GMT+0530 (India Standard Time)",
+    "cutoff_time_iso": "Tue Sep 09 2025 16:47:14 GMT+0530 (India Standard Time)",
+    "total_orders": 2822,
+    "total_order_lines": 22070,
+    "total_order_value": 3032375,
+    "split_lines_sbl": 10669,
+    "split_lines_ptl": 11401,
+    "split_lines_fc": 1227
   },
   "stageTargets": {
     "SBL": {
@@ -49,8 +49,8 @@
     "starvation_Rmin_factor_of_target": 0.5,
     "ptl_shortfall_min_factor": 0.1
   },
-  "startTime": "2025-09-06T06:54:50.000Z",
-  "cutoffTime": "2025-09-08T11:46:14.000Z",
+  "startTime": "2025-09-08T18:29:50.000Z",
+  "cutoffTime": "2025-09-09T11:17:14.000Z",
   "expectedDuration": {
     "sbl": 2.5,
     "ptl": 2.5,

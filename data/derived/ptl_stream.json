@@ -1,9 +1,9 @@
 {
-  "ema_lph": 71,
-  "last_hour_avg": 71,
-  "slope": 0,
-  "trend": "stable",
+  "ema_lph": 118,
+  "last_hour_avg": 118,
+  "slope": -8.5,
+  "trend": "down",
   "shortfall": true,
-  "shortfall_factor": 0.61,
+  "shortfall_factor": 0.35,
   "health_color": "red"
 }

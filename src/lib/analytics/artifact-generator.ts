@@ -25,45 +25,21 @@ export class ArtifactGenerator {
       // Ensure derived directory exists
       await mkdir(this.derivedDir, { recursive: true });
       
-      // Try blob storage first, fallback to simple storage
-      let storage;
-      try {
-        if (process.env.BLOB_READ_WRITE_TOKEN) {
-          storage = BlobStorage.getInstance();
-          console.log('[ARTIFACT_GENERATOR] Using Vercel Blob storage');
-        } else {
-          throw new Error('No blob storage token available');
-        }
-      } catch (error) {
-        console.log('[ARTIFACT_GENERATOR] Blob storage not available, using simple storage:', error);
-        storage = SimpleStorage.getInstance();
-        await storage.loadRepositoryFiles();
-      }
+      // Log which data directory is being used
+      const dataDir = join(process.cwd(), 'data');
+      console.log('[ARTIFACT_GENERATOR] Using data directory:', dataDir);
       
-      const files = await storage.getBestAvailableFiles();
-      console.log('[ARTIFACT_GENERATOR] Using files from storage:', files.map(f => f.filename));
-      
-      // Write storage files to temp directory for file adapter to use
-      const tempDir = join(process.cwd(), 'temp');
+      // Check what files exist in the data directory
       try {
         const fs = await import('fs');
-        if (!fs.existsSync(tempDir)) {
-          fs.mkdirSync(tempDir, { recursive: true });
-        }
-        
-        // Write all files to temp directory
-        for (const file of files) {
-          const tempPath = join(tempDir, file.filename);
-          await writeFile(tempPath, file.buffer);
-        }
-        
-        // Note: File adapter will use tempDir for data loading
+        const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.xlsx'));
+        console.log('[ARTIFACT_GENERATOR] Excel files found in data directory:', files);
       } catch (error) {
-        console.warn('[ARTIFACT_GENERATOR] Could not set up temp files:', error);
+        console.log('[ARTIFACT_GENERATOR] Error listing files:', error);
       }
 
       // Load all data sources (handle missing files gracefully)
-      const [loadingData, sblTimeline, ptlTimeline, stationCompletion, sblTableLines, ptlTableLines, secondarySortation, sblSKUs] = await Promise.all([
+      const [loadingData, sblTimeline, ptlTimeline, stationCompletion, sblTableLines, ptlTableLines, secondarySortation, sblInfeedData] = await Promise.all([
         getLoadingStatusFromFile().catch(() => ({ byTrip: [], summary: { totalAssigned: 0, totalLoaded: 0 } })),
         getSBLTimelineFromFile().catch(() => ({ timeline: [], summary: { totalLines: 0, averageProductivity: 0 } })),
         getPTLTimelineFromFile().catch(() => ({ timeline: [], summary: { totalLines: 0, averageProductivity: 0 } })),
@@ -71,7 +47,7 @@ export class ArtifactGenerator {
         getSBLTableLinesFromFile().catch(() => ({ intervals: [], summary: { totalIntervals: 0, totalLines: 0, averageLinesPerInterval: 0 } })),
         getPTLTableLinesFromFile().catch(() => ({ intervals: [], summary: { totalIntervals: 0, totalLines: 0, averageLinesPerInterval: 0 } })),
         getSecondarySortationFromFile().catch(() => ({ records: [], summary: { totalRecords: 0, totalCrates: 0, totalQC: 0 } })),
-        getSBLSKUsFromFile().catch(() => ({ skus: [], summary: { totalSKUs: 0, pendingSKUs: 0, completedSKUs: 0, totalLines: 0, pendingLines: 0, completionRate: 0 } }))
+        getSBLInfeedFromFile().catch(() => ({ skus: [], hus: [] }))
       ]);
 
       this.logger.logCalculation('data_loaded', { 
@@ -81,7 +57,9 @@ export class ArtifactGenerator {
         stations: stationCompletion.stations.length,
         sblTableLinesIntervals: sblTableLines.intervals.length,
         ptlTableLinesIntervals: ptlTableLines.intervals.length,
-        secondarySortationRecords: secondarySortation.records.length
+        secondarySortationRecords: secondarySortation.records.length,
+        sblInfeedSKUs: sblInfeedData.skus.length,
+        sblInfeedHUs: sblInfeedData.hus.length
       }, null);
 
       // Generate each artifact
@@ -104,13 +82,26 @@ export class ArtifactGenerator {
       let sblInfeed: SBLInfeedData | null = null;
       try {
         console.log('[DEBUG] About to call generateSBLInfeedData');
-        // TODO: Fix SBL infeed data generation
-        // sblInfeed = await this.generateSBLInfeedData(storageAdapter);
+        sblInfeed = await generateSBLInfeedData();
         console.log('[DEBUG] SBL infeed result:', sblInfeed ? 'Data found' : 'No data');
       } catch (error) {
         console.error('[DEBUG] SBL infeed error:', error instanceof Error ? error.message : String(error));
         console.error('[DEBUG] SBL infeed stack:', error instanceof Error ? error.stack : 'No stack trace');
       }
+
+      // Generate SKU data from SBL infeed
+      const sblSKUs = {
+        skus: sblInfeed?.skus || [],
+        summary: {
+          totalSKUs: sblInfeed?.summary?.total_skus || 0,
+          pendingSKUs: sblInfeed?.skus?.filter((s: any) => s.pending_qty > 0).length || 0,
+          completedSKUs: sblInfeed?.skus?.filter((s: any) => s.pending_qty === 0).length || 0,
+          totalLines: sblInfeed?.skus?.reduce((sum: number, s: any) => sum + (s.pending_lines || 0), 0) || 0,
+          pendingLines: sblInfeed?.skus?.reduce((sum: number, s: any) => sum + (s.pending_lines || 0), 0) || 0,
+          completionRate: sblInfeed?.summary?.total_skus ? 
+            (sblInfeed.skus.filter((s: any) => s.pending_qty === 0).length / sblInfeed.summary.total_skus) : 0
+        }
+      };
 
       const artifacts: DashboardArtifacts = {
         overall_summary: overallSummary,
