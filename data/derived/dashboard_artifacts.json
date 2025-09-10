@@ -1,7 +1,7 @@
 {
   "overall_summary": {
-    "projected_finish_iso": "2025-09-11T15:35:32.279Z",
-    "buffer_minutes": -3138,
+    "projected_finish_iso": "2025-09-11T15:40:39.961Z",
+    "buffer_minutes": -3143,
     "otif_risk": "HIGH",
     "line_coverage_pct": 0.47304032623470776,
     "wave_status": "LATE",
@@ -1896,7 +1896,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T16:02:48.865Z",
-        "age_minutes": 907,
+        "age_minutes": 910,
         "bin_status": "ACTIVE"
       },
       {
@@ -1908,7 +1908,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T15:57:31.854Z",
-        "age_minutes": 912,
+        "age_minutes": 915,
         "bin_status": "ACTIVE"
       },
       {
@@ -1920,7 +1920,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T22:52:16.733Z",
-        "age_minutes": 498,
+        "age_minutes": 500,
         "bin_status": "ACTIVE"
       },
       {
@@ -1932,7 +1932,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T02:44:12.174Z",
-        "age_minutes": 266,
+        "age_minutes": 268,
         "bin_status": "ACTIVE"
       },
       {
@@ -1944,7 +1944,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T14:07:12.005Z",
-        "age_minutes": 1023,
+        "age_minutes": 1025,
         "bin_status": "ACTIVE"
       },
       {
@@ -1956,7 +1956,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T02:59:05.256Z",
-        "age_minutes": 251,
+        "age_minutes": 254,
         "bin_status": "ACTIVE"
       },
       {
@@ -1968,7 +1968,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:40:18.799Z",
-        "age_minutes": 210,
+        "age_minutes": 212,
         "bin_status": "ACTIVE"
       },
       {
@@ -1980,7 +1980,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:06:10.035Z",
-        "age_minutes": 244,
+        "age_minutes": 246,
         "bin_status": "ACTIVE"
       },
       {
@@ -1992,7 +1992,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T10:06:41.463Z",
-        "age_minutes": 1263,
+        "age_minutes": 1266,
         "bin_status": "ACTIVE"
       },
       {
@@ -2004,7 +2004,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T18:44:55.528Z",
-        "age_minutes": 745,
+        "age_minutes": 748,
         "bin_status": "ACTIVE"
       },
       {
@@ -2016,7 +2016,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:43:12.916Z",
-        "age_minutes": 207,
+        "age_minutes": 209,
         "bin_status": "ACTIVE"
       },
       {
@@ -2028,7 +2028,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T17:34:50.470Z",
-        "age_minutes": 815,
+        "age_minutes": 818,
         "bin_status": "ACTIVE"
       },
       {
@@ -2040,7 +2040,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T05:21:15.577Z",
-        "age_minutes": 109,
+        "age_minutes": 111,
         "bin_status": "ACTIVE"
       },
       {
@@ -2052,7 +2052,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:07:07.489Z",
-        "age_minutes": 243,
+        "age_minutes": 246,
         "bin_status": "ACTIVE"
       },
       {
@@ -2064,7 +2064,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T02:40:36.368Z",
-        "age_minutes": 269,
+        "age_minutes": 272,
         "bin_status": "ACTIVE"
       },
       {
@@ -2076,7 +2076,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T02:55:50.237Z",
-        "age_minutes": 254,
+        "age_minutes": 257,
         "bin_status": "ACTIVE"
       },
       {
@@ -2088,7 +2088,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T05:14:02.508Z",
-        "age_minutes": 116,
+        "age_minutes": 119,
         "bin_status": "ACTIVE"
       },
       {
@@ -2100,7 +2100,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T11:35:05.617Z",
-        "age_minutes": 1175,
+        "age_minutes": 1178,
         "bin_status": "ACTIVE"
       },
       {
@@ -2112,7 +2112,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:55:04.831Z",
-        "age_minutes": 135,
+        "age_minutes": 138,
         "bin_status": "ACTIVE"
       },
       {
@@ -2124,7 +2124,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T05:44:48.153Z",
-        "age_minutes": 85,
+        "age_minutes": 88,
         "bin_status": "ACTIVE"
       },
       {
@@ -2136,7 +2136,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T05:25:57.592Z",
-        "age_minutes": 104,
+        "age_minutes": 107,
         "bin_status": "ACTIVE"
       },
       {
@@ -2148,7 +2148,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:40:18.799Z",
-        "age_minutes": 210,
+        "age_minutes": 212,
         "bin_status": "ACTIVE"
       },
       {
@@ -2160,7 +2160,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T02:41:50.753Z",
-        "age_minutes": 268,
+        "age_minutes": 271,
         "bin_status": "ACTIVE"
       },
       {
@@ -2172,7 +2172,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T06:19:08.997Z",
-        "age_minutes": 1491,
+        "age_minutes": 1493,
         "bin_status": "ACTIVE"
       },
       {
@@ -2184,7 +2184,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:45:21.937Z",
-        "age_minutes": 145,
+        "age_minutes": 147,
         "bin_status": "ACTIVE"
       },
       {
@@ -2196,7 +2196,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:47:19.320Z",
-        "age_minutes": 143,
+        "age_minutes": 145,
         "bin_status": "ACTIVE"
       },
       {
@@ -2208,7 +2208,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:04:01.735Z",
-        "age_minutes": 246,
+        "age_minutes": 249,
         "bin_status": "ACTIVE"
       },
       {
@@ -2220,7 +2220,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T05:03:38.746Z",
-        "age_minutes": 126,
+        "age_minutes": 129,
         "bin_status": "ACTIVE"
       },
       {
@@ -2232,7 +2232,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:40:58.758Z",
-        "age_minutes": 149,
+        "age_minutes": 152,
         "bin_status": "ACTIVE"
       },
       {
@@ -2244,7 +2244,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:20:21.328Z",
-        "age_minutes": 230,
+        "age_minutes": 232,
         "bin_status": "ACTIVE"
       },
       {
@@ -2256,7 +2256,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:38:22.201Z",
-        "age_minutes": 152,
+        "age_minutes": 154,
         "bin_status": "ACTIVE"
       },
       {
@@ -2268,7 +2268,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T23:27:57.585Z",
-        "age_minutes": 462,
+        "age_minutes": 465,
         "bin_status": "ACTIVE"
       },
       {
@@ -2280,7 +2280,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T02:54:10.031Z",
-        "age_minutes": 256,
+        "age_minutes": 258,
         "bin_status": "ACTIVE"
       },
       {
@@ -2292,7 +2292,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T11:35:05.617Z",
-        "age_minutes": 1175,
+        "age_minutes": 1178,
         "bin_status": "ACTIVE"
       },
       {
@@ -2304,7 +2304,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T02:59:54.424Z",
-        "age_minutes": 250,
+        "age_minutes": 253,
         "bin_status": "ACTIVE"
       },
       {
@@ -2316,7 +2316,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T03:04:01.735Z",
-        "age_minutes": 246,
+        "age_minutes": 249,
         "bin_status": "ACTIVE"
       },
       {
@@ -2328,7 +2328,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:42:57.234Z",
-        "age_minutes": 147,
+        "age_minutes": 150,
         "bin_status": "ACTIVE"
       },
       {
@@ -2340,7 +2340,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:47:11.828Z",
-        "age_minutes": 143,
+        "age_minutes": 145,
         "bin_status": "ACTIVE"
       },
       {
@@ -2352,7 +2352,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T11:35:05.617Z",
-        "age_minutes": 1175,
+        "age_minutes": 1178,
         "bin_status": "ACTIVE"
       },
       {
@@ -2364,7 +2364,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-10T04:45:56.188Z",
-        "age_minutes": 144,
+        "age_minutes": 147,
         "bin_status": "ACTIVE"
       },
       {
@@ -2376,7 +2376,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T16:14:10.147Z",
-        "age_minutes": 896,
+        "age_minutes": 898,
         "bin_status": "ACTIVE"
       },
       {
@@ -2388,7 +2388,7 @@
         "blocked_status": false,
         "inclusionStatus": "INCLUDED",
         "updatedAt": "2025-09-09T23:12:12.276Z",
-        "age_minutes": 478,
+        "age_minutes": 480,
         "bin_status": "ACTIVE"
       }
     ],
@@ -2401,7 +2401,7 @@
       "stale_hus": 42
     }
   },
-  "calculation_timestamp": "2025-09-10T07:10:25.157Z",
+  "calculation_timestamp": "2025-09-10T07:13:08.484Z",
   "macros": {
     "waveInfo": {
       "wave_id": "1",

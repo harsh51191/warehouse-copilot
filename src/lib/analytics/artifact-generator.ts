@@ -4,8 +4,6 @@ import { DashboardArtifacts, OverallSummary, SBLStation, SBLStream, PTLStream, P
 import { ProcessedMacros } from './macros-processor';
 import { getLoadingStatusFromFile, getSBLTimelineFromFile, getPTLTimelineFromFile, getStationCompletionFromFile, getSBLTableLinesFromFile, getPTLTableLinesFromFile, getSecondarySortationFromFile, getSBLSKUsFromFile, getSBLInfeedFromFile } from '../../server/datasource/file-adapter';
 import { STAGE_TARGETS, THRESHOLDS } from '../config/stage-targets';
-import { BlobStorage } from '../blob-storage';
-import { SimpleStorage } from '../simple-storage';
 
 export class ArtifactGenerator {
   private derivedDir: string;

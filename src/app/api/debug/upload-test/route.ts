@@ -1,65 +1,44 @@
 import { NextResponse } from 'next/server';
 import { readdir, stat } from 'fs/promises';
 import { join } from 'path';
-import { BlobStorage } from '@/lib/blob-storage';
-import { SimpleStorage } from '@/lib/simple-storage';
 
 export async function GET() {
   try {
-    // Try blob storage first, fallback to simple storage
-    let storage;
-    let useBlobStorage = false;
+    console.log('[UPLOAD TEST] Checking repository files');
     
-    try {
-      if (process.env.BLOB_READ_WRITE_TOKEN) {
-        storage = BlobStorage.getInstance();
-        useBlobStorage = true;
-        console.log('[UPLOAD TEST] Using Vercel Blob storage');
-      } else {
-        throw new Error('No blob storage token available');
-      }
-    } catch (error) {
-      console.log('[UPLOAD TEST] Blob storage not available, using simple storage:', error);
-      storage = SimpleStorage.getInstance();
-      await storage.loadRepositoryFiles();
-      useBlobStorage = false;
-    }
+    // Check repository data directory
+    const dataDir = join(process.cwd(), 'data');
+    const files = await readdir(dataDir);
+    const excelFiles = files.filter(f => f.endsWith('.xlsx'));
     
-    console.log('[UPLOAD TEST] Checking storage system');
+    console.log('[UPLOAD TEST] Found files:', excelFiles.length);
     
-    // Get stored files
-    const storedFiles = storage.getStoredFiles();
-    const allFiles = await storage.getBestAvailableFiles();
-    
-    console.log('[UPLOAD TEST] Stored files:', storedFiles.length);
-    console.log('[UPLOAD TEST] Available files:', allFiles.length);
-    
-    // Get detailed stats for stored files
-    const storedFileStats = storedFiles.map(file => ({
-      name: file.filename,
-      size: (file as any).buffer?.length || 0,
-      modified: file.uploadedAt,
-      created: file.uploadedAt,
-      type: file.detectedType
-    }));
-    
-    // Get detailed stats for all available files
-    const allFileStats = allFiles.map(file => ({
-      name: file.filename,
-      size: file.buffer.length,
-      modified: 'N/A',
-      created: 'N/A',
-      type: file.detectedType
-    }));
+    // Get file stats
+    const fileStats = await Promise.all(
+      excelFiles.map(async (file) => {
+        const filePath = join(dataDir, file);
+        const stats = await stat(filePath);
+        return {
+          name: file,
+          size: stats.size,
+          modified: stats.mtime.toISOString(),
+          created: stats.birthtime.toISOString(),
+          type: file.includes('sbl_productivity') ? 'sbl_productivity' :
+                file.includes('ptl_productivity') ? 'ptl_productivity' :
+                file.includes('partial_hus') ? 'partial_hus_pending_based_on_gtp_demand' :
+                'other'
+        };
+      })
+    );
     
     return NextResponse.json({
       success: true,
       data: {
         storage: {
-          type: useBlobStorage ? 'Vercel Blob' : 'Simple Storage',
-          storedFiles: storedFileStats,
-          hasUploadedFiles: storage.hasUploadedFiles(),
-          allFiles: allFileStats
+          type: 'Repository Files',
+          storedFiles: [],
+          hasUploadedFiles: false,
+          allFiles: fileStats
         },
         timestamp: new Date().toISOString()
       }
