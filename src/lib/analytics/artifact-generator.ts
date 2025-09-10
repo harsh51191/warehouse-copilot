@@ -24,17 +24,28 @@ export class ArtifactGenerator {
       // Ensure derived directory exists
       await mkdir(this.derivedDir, { recursive: true });
       
-      // Log which data directory is being used
-      const dataDir = join(process.cwd(), 'data');
-      console.log('[ARTIFACT_GENERATOR] Using data directory:', dataDir);
+      // Use blob storage to get the best available files
+      const blobStorage = BlobStorage.getInstance();
+      const files = await blobStorage.getBestAvailableFiles();
+      console.log('[ARTIFACT_GENERATOR] Using files from blob storage:', files.map(f => f.filename));
       
-      // Check what files exist in the data directory
+      // Write storage files to temp directory for file adapter to use
+      const tempDir = join(process.cwd(), 'temp');
       try {
         const fs = await import('fs');
-        const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.xlsx'));
-        console.log('[ARTIFACT_GENERATOR] Excel files found in data directory:', files);
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
+        }
+        
+        // Write all files to temp directory
+        for (const file of files) {
+          const tempPath = join(tempDir, file.filename);
+          await writeFile(tempPath, file.buffer);
+        }
+        
+        // Note: File adapter will use tempDir for data loading
       } catch (error) {
-        console.log('[ARTIFACT_GENERATOR] Error listing files:', error);
+        console.warn('[ARTIFACT_GENERATOR] Could not set up temp files:', error);
       }
 
       // Load all data sources (handle missing files gracefully)
