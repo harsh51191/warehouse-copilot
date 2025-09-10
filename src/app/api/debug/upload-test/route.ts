@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { readdir, stat } from 'fs/promises';
 import { join } from 'path';
 
-export async function POST() {
+export async function GET() {
   try {
     const dataDir = process.env.VERCEL === '1' ? '/tmp/data' : join(process.cwd(), 'data');
     

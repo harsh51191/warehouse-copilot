@@ -62,9 +62,13 @@ export async function GET() {
             const artifactsStats = fs.statSync(artifactsPath);
             const excelFiles = fs.readdirSync(tmpDataDir).filter(f => f.endsWith('.xlsx'));
             
+            console.log('[DASHBOARD API] Artifacts modified:', artifactsStats.mtime.toISOString());
+            console.log('[DASHBOARD API] Excel files in /tmp/data:', excelFiles);
+            
             // Check if any Excel file is newer than artifacts
             for (const excelFile of excelFiles) {
               const excelStats = fs.statSync(join(tmpDataDir, excelFile));
+              console.log('[DASHBOARD API] Excel file:', excelFile, 'modified:', excelStats.mtime.toISOString());
               if (excelStats.mtime > artifactsStats.mtime) {
                 console.log('[DASHBOARD API] Excel file is newer than artifacts:', excelFile);
                 shouldRegenerate = true;
@@ -72,12 +76,17 @@ export async function GET() {
               }
             }
           } else {
+            console.log('[DASHBOARD API] No artifacts file found, will regenerate');
             shouldRegenerate = true;
           }
         } catch (error) {
           console.log('[DASHBOARD API] Error checking file timestamps:', error);
           shouldRegenerate = true;
         }
+        
+        // FORCE REGENERATION FOR DEBUGGING - REMOVE THIS LATER
+        shouldRegenerate = true;
+        console.log('[DASHBOARD API] FORCING REGENERATION FOR DEBUGGING');
         
         if (shouldRegenerate) {
           console.log('[DASHBOARD API] Regenerating artifacts...');
